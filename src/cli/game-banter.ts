@@ -12,7 +12,7 @@ getApi('/api/state')
       protocol: {
         destination: 'Codex chat',
         publicOnly: 'This command uses only public table state. It does not inspect Uplift private turn files and does not submit actions.',
-        privateInfo: 'Do not infer or reveal hidden cards. Ali acts in the preview; Uplift acts with game:play only on Uplift turns.'
+        privateInfo: 'Do not infer or reveal hidden cards. Ali acts in the preview; Uplift acts with game:loop during normal play.'
       },
       suggestedMessage: buildBanterMessage(state),
       publicContext: buildBanterContext(state)

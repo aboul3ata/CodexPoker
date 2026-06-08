@@ -1,6 +1,7 @@
 import type { GameSnapshot } from './contracts'
 
 export type CodexCommandAdvice = {
+  loop?: string
   banter?: string
   turn?: string
   play?: string
@@ -11,6 +12,7 @@ export type CodexCommandAdvice = {
 export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'phase'>): CodexCommandAdvice {
   if (state.phase === 'hand-complete') {
     return {
+      loop: 'npm run --silent game:loop',
       review: 'npm run --silent game:review',
       next: 'npm run --silent game:next'
     }
@@ -18,6 +20,7 @@ export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'p
 
   if (state.actingSeatId === 'user') {
     return {
+      loop: 'npm run --silent game:loop',
       banter: 'npm run --silent game:banter'
     }
   }
@@ -25,6 +28,7 @@ export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'p
   if (state.actingSeatId !== 'uplift') return {}
 
   return {
+    loop: 'npm run --silent game:loop',
     banter: 'npm run --silent game:banter',
     turn: 'npm run --silent game:turn',
     play: 'npm run --silent game:play'

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CurrentTurnPacket, GameSnapshot, LatestHandPacket } from '../src/shared/contracts'
 import { StaleTurnError } from '../src/server/errors'
 import { GameService } from '../src/server/game-service'
@@ -148,6 +148,65 @@ describe('GameService', () => {
       })
     ).toThrow(StaleTurnError)
     expect(service.getSnapshot().actingSeatId).toBe('uplift')
+  })
+
+  it('surfaces real raise, reraise, and check decisions from the poker engine', () => {
+    let state = service.getSnapshot()
+    const openingRaise = state.legalActions.find((action) => action.kind === 'raise')
+    expect(openingRaise).toBeDefined()
+
+    state = service.submitAction({
+      seat: 'user',
+      turnToken: state.turnToken,
+      action: 'raise',
+      amount: openingRaise?.min
+    })
+
+    expect(state.actingSeatId).toBe('uplift')
+    expect(state.legalActions.some((action) => action.kind === 'raise')).toBe(true)
+
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.99)
+    try {
+      state = service.startNewHand()
+      let sawUserCheck = false
+      let guard = 0
+
+      while (!sawUserCheck && guard < 80) {
+        guard += 1
+        if (state.phase === 'hand-complete') {
+          state = service.startNewHand()
+          continue
+        }
+
+        if (state.actingSeatId === 'user') {
+          if (state.legalActions.some((action) => action.kind === 'check')) {
+            sawUserCheck = true
+            break
+          }
+          const call = state.legalActions.find((action) => action.kind === 'call')
+          const raise = state.legalActions.find((action) => action.kind === 'raise')
+          const action = call ?? raise ?? state.legalActions[0]
+          state = service.submitAction({
+            seat: 'user',
+            turnToken: state.turnToken,
+            action: action.kind,
+            amount: action.kind === 'bet' || action.kind === 'raise' ? action.min : undefined
+          })
+          continue
+        }
+
+        if (state.actingSeatId === 'uplift') {
+          state = service.useUpliftFallback()
+          continue
+        }
+
+        throw new Error(`Unexpected acting seat: ${state.actingSeatId}`)
+      }
+
+      expect(sawUserCheck).toBe(true)
+    } finally {
+      random.mockRestore()
+    }
   })
 
   it('fast-forwards after the user folds and records accounting/review data', () => {

@@ -86,12 +86,12 @@ function buildCodexChatGuide(state: GameSnapshot) {
       publicTableStory: buildPublicTableStory(state),
       visibleLineup: buildVisibleLineup(state),
       suggestedTableLine: buildSuggestedTableLine(state),
-      tableTalkCue: 'Banter here as Uplift using only public board/action context, then submit the move with game:play.',
+      tableTalkCue: 'Banter here as Uplift using only public board/action context, then submit the move with game:loop.',
       privateGuardrails: [
         'You may read the private turn file for Uplift action selection only.',
         'Never reveal, summarize, or hint at exact Uplift hole cards before showdown.',
         'Do not move for Ali; only submit an action for --seat uplift.',
-        'Run npm run --silent game:turn to inspect privately, or npm run --silent game:play to submit the private recommendation.'
+        'Run npm run --silent game:loop to submit the private recommendation, or game:turn only if you need to inspect privately.'
       ]
     }
   }
@@ -107,7 +107,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
       privateGuardrails: [
         'Do not infer or ask to see Ali hole cards beyond what the preview shows to the user.',
         'Do not use fallback or bot endpoints as normal play.',
-        'After Ali acts, run npm run --silent game:state again before deciding for Uplift.'
+        'After Ali acts, run npm run --silent game:loop before deciding whether Uplift or Ali is next.'
       ]
     }
   }
@@ -118,9 +118,9 @@ function buildCodexChatGuide(state: GameSnapshot) {
     publicTableStory: buildPublicTableStory(state),
     visibleLineup: buildVisibleLineup(state),
     suggestedTableLine: buildSuggestedTableLine(state),
-    tableTalkCue: 'Local bots are resolving the table state; wait for the next user or Uplift decision point.',
+    tableTalkCue: 'Local bots are resolving the table state; run game:loop to stop at the next user, Uplift, or review point.',
     privateGuardrails: [
-      'Refresh with npm run --silent game:state before speaking as if a new decision is available.'
+      'Refresh with npm run --silent game:loop before speaking as if a new decision is available.'
     ]
   }
 }
@@ -136,7 +136,7 @@ function buildSuggestedTableLine(state: GameSnapshot) {
   }
 
   if (state.actingSeatId === 'uplift') {
-    return `Give one short table line from public context only, then choose an Uplift action. ${buildPublicTableStory(state)}`
+    return `Give one short table line from public context only, then run game:loop for Uplift's action. ${buildPublicTableStory(state)}`
   }
 
   if (state.actingSeatId === 'user') {

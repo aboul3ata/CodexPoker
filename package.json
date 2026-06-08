@@ -14,6 +14,7 @@
     "game:banter": "tsx src/cli/game-banter.ts",
     "game:turn": "tsx src/cli/game-turn.ts",
     "game:play": "tsx src/cli/game-play.ts",
+    "game:loop": "tsx src/cli/game-loop.ts",
     "game:act": "tsx src/cli/game-act.ts",
     "game:next": "tsx src/cli/game-next.ts",
     "game:review": "tsx src/cli/game-review.ts",

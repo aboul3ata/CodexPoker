@@ -111,7 +111,10 @@ describe('game:codex CLI', () => {
     expect(output.mode).toBe('ali-to-act')
     expect(output.suggestedMessage).toContain('Your move')
     expect(output.nextInstruction).toContain('wait for Ali')
-    expect(output.suggestedCommands).toEqual({ banter: 'npm run --silent game:banter' })
+    expect(output.suggestedCommands).toEqual({
+      loop: 'npm run --silent game:loop',
+      banter: 'npm run --silent game:banter'
+    })
     expect(output.publicContext.visibleLineup).toHaveLength(6)
     expect(after.handId).toBe(before.handId)
     expect(after.actionSeq).toBe(before.actionSeq)
@@ -120,15 +123,16 @@ describe('game:codex CLI', () => {
     expect(serialized).not.toContain('"decision"')
   })
 
-  it('routes Uplift turns to game:play without printing private cards', async () => {
+  it('routes Uplift turns to game:loop without printing private cards', async () => {
     advanceToUplift()
     const output = await runGameCodex()
     const serialized = JSON.stringify(output)
 
     expect(output.mode).toBe('uplift-to-act')
     expect(output.suggestedMessage).toContain('My turn from this chat')
-    expect(output.nextInstruction).toContain('game:play')
+    expect(output.nextInstruction).toContain('game:loop')
     expect(output.suggestedCommands).toEqual({
+      loop: 'npm run --silent game:loop',
       banter: 'npm run --silent game:banter',
       turn: 'npm run --silent game:turn',
       play: 'npm run --silent game:play'
@@ -149,6 +153,7 @@ describe('game:codex CLI', () => {
     expect(output.nextInstruction).toContain('game:review -- --mode accepted')
     expect(output.nextInstruction).toContain('game:next')
     expect(output.suggestedCommands).toEqual({
+      loop: 'npm run --silent game:loop',
       review: 'npm run --silent game:review',
       next: 'npm run --silent game:next'
     })

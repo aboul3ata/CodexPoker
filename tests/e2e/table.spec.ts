@@ -84,24 +84,75 @@ test('routes Uplift turns to this Codex chat instead of preview controls', async
   const codexTurn = page.getByRole('region', { name: 'Codex chat turn' })
   await expect(codexTurn).toBeVisible()
   await expect(codexTurn.getByText('Codex should act now.')).toBeVisible()
+  await expect(codexTurn.getByText('npm run --silent game:loop')).toBeVisible()
   await expect(codexTurn.getByText('npm run --silent game:codex')).toBeVisible()
-  await expect(codexTurn.getByText('npm run --silent game:play')).toBeVisible()
+  await expect(codexTurn.getByText('npm run --silent game:play')).toHaveCount(0)
   await expect(page.getByText('Uplift is thinking.')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
+})
+
+test('prioritizes fast-fold simulation after Ali folds', async ({ page, request }) => {
+  await page.goto('/')
+  let state = (await (await request.post('/api/new-hand')).json()).state
+
+  for (let guard = 0; state.actingSeatId !== 'user' && guard < 6; guard += 1) {
+    if (state.actingSeatId === 'uplift') {
+      state = (await (await request.post('/api/uplift/fallback')).json()).state
+      continue
+    }
+    state = (await (await request.post('/api/new-hand')).json()).state
+  }
+
+  const fold = state.legalActions.find((action: { kind: string }) => action.kind === 'fold')
+  expect(fold).toBeTruthy()
+  state = (await (await request.post('/api/action', {
+    data: {
+      seat: 'user',
+      turnToken: state.turnToken,
+      action: 'fold'
+    }
+  })).json()).state
+  expect(state.seats.find((seat: { seatId: string }) => seat.seatId === 'user')?.isFolded).toBe(true)
+
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Simulate to result' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Codex chat turn' })).toHaveCount(0)
 })
 
 test('lets the user size a bet or raise from the preview', async ({ page, request }) => {
   await page.goto('/')
   let state = (await (await request.post('/api/new-hand')).json()).state
+  let wager: { kind: string; min: number; max: number } | undefined
 
-  for (let guard = 0; state.actingSeatId !== 'user' && guard < 4; guard += 1) {
-    if (state.actingSeatId !== 'uplift') break
-    state = (await (await request.post('/api/uplift/fallback')).json()).state
+  for (let guard = 0; guard < 20; guard += 1) {
+    if (state.phase !== 'playing') {
+      state = (await (await request.post('/api/new-hand')).json()).state
+      continue
+    }
+
+    if (state.actingSeatId === 'uplift') {
+      state = (await (await request.post('/api/uplift/fallback')).json()).state
+      continue
+    }
+
+    expect(state.actingSeatId).toBe('user')
+    wager = state.legalActions.find((action: { kind: string; min?: number; max?: number }) =>
+      (action.kind === 'bet' || action.kind === 'raise') && typeof action.min === 'number' && typeof action.max === 'number'
+    )
+    if (wager) break
+
+    const nextAction = state.legalActions.find((action: { kind: string }) => action.kind === 'check' || action.kind === 'call') ?? state.legalActions[0]
+    state = (await (await request.post('/api/action', {
+      data: {
+        seat: 'user',
+        turnToken: state.turnToken,
+        action: nextAction.kind
+      }
+    })).json()).state
   }
 
   expect(state.actingSeatId).toBe('user')
-  const wager = state.legalActions.find((action: { kind: string }) => action.kind === 'bet' || action.kind === 'raise')
-  expect(wager).toBeTruthy()
+  if (!wager) throw new Error('Could not find a legal bet or raise spot for the sizing test.')
   const amount = Math.min(wager.max, wager.min + 100)
   const fieldName = wager.kind === 'raise' ? 'Raise amount' : 'Bet amount'
 

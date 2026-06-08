@@ -38,10 +38,10 @@ function buildNextInstruction(state: GameSnapshot) {
     return 'Ask Ali whether they want the quick review. If yes, run npm run --silent game:review -- --mode accepted. If not, run npm run --silent game:next.'
   }
   if (state.actingSeatId === 'uplift') {
-    return 'Say the public-safe table line if useful, then run npm run --silent game:play to submit Uplift from private context.'
+    return 'Say the public-safe table line if useful, then run npm run --silent game:loop to submit Uplift from private context and stop at Ali or review.'
   }
   if (state.actingSeatId === 'user') {
     return 'Say the public-safe table line if useful, then wait for Ali to act in the preview.'
   }
-  return 'Wait for the local bots to resolve, then run npm run --silent game:codex again.'
+  return 'Run npm run --silent game:loop to resolve any automatic table movement, then stop at Ali or review.'
 }

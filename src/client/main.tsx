@@ -424,12 +424,12 @@ function ActionFooter({
     <footer className="action-footer">
       {isUserTurn ? (
         <UserActionPanel state={state} onAction={onAction} />
-      ) : isUpliftTurn ? (
-        <UpliftBridgePrompt state={state} />
       ) : canFastForward ? (
         <button className="primary-action" onClick={() => onFastForward()} type="button">
           <RotateCcw size={18} /> Simulate to result
         </button>
+      ) : isUpliftTurn ? (
+        <UpliftBridgePrompt state={state} />
       ) : (
         <div className="waiting-copy">Local bots are moving.</div>
       )}
@@ -452,8 +452,8 @@ function UpliftBridgePrompt({ state }: { state: GameSnapshot }) {
         <p>{buildUpliftBridgeLine(state)}</p>
       </div>
       <div className="codex-command-stack" aria-label="Codex turn commands">
+        <code>npm run --silent game:loop</code>
         <code>npm run --silent game:codex</code>
-        <code>npm run --silent game:play</code>
       </div>
     </section>
   )

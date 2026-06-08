@@ -169,6 +169,7 @@ describe('safe CLI state output', () => {
     expect(output.codexChat.publicTableStory).toContain('last action: Atlas check on flop')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('Do not use fallback')
     expect(output.suggestedCommands).toEqual({
+      loop: 'npm run --silent game:loop',
       banter: 'npm run --silent game:banter'
     })
   })
@@ -185,12 +186,13 @@ describe('safe CLI state output', () => {
 
     expect(output.codexChat.mode).toBe('uplift-to-act')
     expect(output.codexChat.tableTalkCue).toContain('Banter here as Uplift')
-    expect(output.codexChat.tableTalkCue).toContain('game:play')
+    expect(output.codexChat.tableTalkCue).toContain('game:loop')
     expect(output.codexChat.suggestedTableLine).toContain('public context only')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('private turn file')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('game:turn')
-    expect(output.codexChat.privateGuardrails.join(' ')).toContain('game:play')
+    expect(output.codexChat.privateGuardrails.join(' ')).toContain('game:loop')
     expect(output.suggestedCommands).toEqual({
+      loop: 'npm run --silent game:loop',
       banter: 'npm run --silent game:banter',
       turn: 'npm run --silent game:turn',
       play: 'npm run --silent game:play'

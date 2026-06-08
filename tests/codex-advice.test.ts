@@ -18,6 +18,7 @@ describe('Codex command advice', () => {
   it('sends Uplift through private turn context instead of public card-blind action advice', () => {
     const commands = buildCodexCommands(baseState)
 
+    expect(commands.loop).toBe('npm run --silent game:loop')
     expect(commands.banter).toBe('npm run --silent game:banter')
     expect(commands.turn).toBe('npm run --silent game:turn')
     expect(commands.play).toBe('npm run --silent game:play')
@@ -32,6 +33,7 @@ describe('Codex command advice', () => {
     })
 
     expect(commands).toEqual({
+      loop: 'npm run --silent game:loop',
       banter: 'npm run --silent game:banter'
     })
     expect(commands).not.toHaveProperty('play')
@@ -46,6 +48,7 @@ describe('Codex command advice', () => {
     })
 
     expect(commands).toEqual({
+      loop: 'npm run --silent game:loop',
       review: 'npm run --silent game:review',
       next: 'npm run --silent game:next'
     })
