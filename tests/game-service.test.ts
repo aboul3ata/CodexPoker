@@ -109,6 +109,7 @@ describe('GameService', () => {
     const packet = JSON.parse(fs.readFileSync('data/bridge/latest-hand.json', 'utf8')) as LatestHandPacket
     expect(packet.result.bankrollAfter).toBe(state.bankroll)
     expect(packet.result.ratingAfter).toBe(state.rating)
+    expect(packet.lesson).toBe(state.review?.lesson)
   })
 
   it('plays repeated hands without losing table-chip conservation or hanging', () => {

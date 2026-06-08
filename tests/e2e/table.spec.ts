@@ -34,3 +34,39 @@ test('keeps the table usable on mobile', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'Poker table' })).toBeVisible()
   await expect(page.locator('.action-footer')).toBeVisible()
 })
+
+test('offers a Codex review command after a completed hand', async ({ page, request }) => {
+  await page.goto('/')
+  let state = (await (await request.post('/api/new-hand')).json()).state
+
+  for (let guard = 0; state.phase !== 'hand-complete' && guard < 8; guard += 1) {
+    if (state.actingSeatId === 'uplift') {
+      state = (await (await request.post('/api/uplift/fallback')).json()).state
+      continue
+    }
+
+    if (state.actingSeatId === 'user') {
+      const fold = state.legalActions.find((action: { kind: string }) => action.kind === 'fold') ?? state.legalActions[0]
+      state = (await (await request.post('/api/action', {
+        data: {
+          seat: 'user',
+          turnToken: state.turnToken,
+          action: fold.kind,
+          amount: fold.min
+        }
+      })).json()).state
+
+      if (state.phase !== 'hand-complete') {
+        state = (await (await request.post('/api/fast-forward')).json()).state
+      }
+      continue
+    }
+
+    throw new Error(`Unexpected actor while completing review setup: ${state.actingSeatId}`)
+  }
+
+  expect(state.phase).toBe('hand-complete')
+  await page.reload()
+  await expect(page.getByText('Review packet is ready')).toBeVisible()
+  await expect(page.getByText('npm run --silent game:review -- --post')).toBeVisible()
+})

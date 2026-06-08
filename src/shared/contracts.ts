@@ -153,6 +153,7 @@ export type LatestHandPacket = {
   }
   visibleDecisionSnapshots: PublicAction[]
   publicActions: PublicAction[]
+  lesson: string
   showdown?: {
     board: Card[]
     revealedHands: Partial<Record<SeatId, Card[]>>

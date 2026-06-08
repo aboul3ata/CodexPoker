@@ -257,6 +257,16 @@ input:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.codex-card small {
+  color: rgba(255, 255, 255, .72);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.codex-card.review-card {
+  background: #2f7d54;
+}
+
 .chat-form {
   margin-top: 12px;
 }

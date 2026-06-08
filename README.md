@@ -39,11 +39,21 @@ After each hand, the server writes:
 
 That packet includes the public action history, showdown cards, bankroll/progress deltas, and ending bankroll/progress values for Codex hand review.
 
+Codex can prepare or post the hand review with:
+
+```bash
+npm run game:review
+npm run game:review -- --post
+```
+
+`--post` adds Uplift's review note to the visible table-talk lane in the running preview.
+
 ## Scripts
 
 - `npm run dev`: start Fastify and Vite together.
 - `npm run game:act`: submit an Uplift action from Codex/chat.
 - `npm run game:say`: add Uplift table talk.
+- `npm run game:review`: read the latest completed hand and optionally post Uplift's review.
 - `npm test`: run unit and integration tests.
 - `npm run test:e2e`: run Playwright browser tests.
 - `npm run build`: typecheck and build the Vite app.

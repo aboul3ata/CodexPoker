@@ -569,6 +569,7 @@ export class GameService {
       },
       visibleDecisionSnapshots: this.publicActions,
       publicActions: this.publicActions,
+      lesson: this.review.lesson,
       showdown: {
         board,
         revealedHands: this.review.showdownCards,

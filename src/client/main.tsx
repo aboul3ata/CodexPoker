@@ -154,6 +154,7 @@ function ChatLane({
     const amountArg = action.amount ? ` --amount ${action.amount}` : ''
     return `npm run --silent game:act -- --seat uplift --turn-token ${state.turnToken} --action ${action.kind}${amountArg}`
   }, [state])
+  const reviewCommand = state.phase === 'hand-complete' ? 'npm run --silent game:review -- --post' : null
 
   return (
     <aside className="chat-lane" aria-label="Table talk">
@@ -174,6 +175,13 @@ function ChatLane({
           <span>Codex turn packet is ready</span>
           <code>{codexCommand}</code>
           <code>{`npm run --silent game:say -- --seat uplift --turn-token ${state.turnToken} --message "I am studying your betting story."`}</code>
+        </div>
+      ) : null}
+      {reviewCommand ? (
+        <div className="codex-card review-card">
+          <span>Review packet is ready</span>
+          <code>{reviewCommand}</code>
+          <small>Posts Uplift's hand review back into this preview.</small>
         </div>
       ) : null}
       <form onSubmit={onSend} className="chat-form">
