@@ -63,7 +63,6 @@ Use that packet to ask in the Codex chat whether the player wants the review, th
 - `npm run dev`: start Fastify and Vite together.
 - `npm run game:state`: inspect the live preview and get the next Codex command.
 - `npm run game:act`: submit an Uplift action from Codex.
-- `npm run game:say`: low-level compatibility helper for app messages; normal table talk belongs in the Codex chat.
 - `npm run game:review`: read the latest completed hand for a Codex chat review.
 - `npm test`: run unit and integration tests.
 - `npm run test:e2e`: run Playwright browser tests.

@@ -115,16 +115,6 @@ const baseState: GameSnapshot = {
       at: '2026-06-08T14:45:56.254Z'
     }
   ],
-  chat: [
-    {
-      id: 'chat_1',
-      seatId: 'uplift',
-      name: 'Uplift',
-      message: 'King-high is not a personality, but today it is at least a plan.',
-      at: '2026-06-08T14:45:55.860Z',
-      tone: 'banter'
-    }
-  ],
   bankroll: 10400,
   rating: 1005,
   history: [],
@@ -146,6 +136,7 @@ describe('safe CLI state output', () => {
     expect(output.protocol.tableTalk).toContain('Use this Codex chat')
     expect(output.protocol.privateInfo).toContain('must not be revealed')
     expect(output.state).not.toHaveProperty('recentChat')
+    expect(output.state).not.toHaveProperty('chat')
     expect(output.codexChat.mode).toBe('ali-to-act')
     expect(output.codexChat.tableTalkCue).toContain('Wait for Ali to act')
     expect(output.codexChat.publicTableStory).toContain('last action: Atlas check on flop')

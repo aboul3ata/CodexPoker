@@ -1,4 +1,4 @@
-import type { ActionKind, Card, GameSnapshot, LatestHandPacket, PublicAction, SeatId } from './contracts'
+import type { ActionKind, Card, LatestHandPacket, PublicAction, SeatId } from './contracts'
 
 const seatNames: Record<SeatId, string> = {
   user: 'Ali',
@@ -33,16 +33,6 @@ export function buildReviewMessage(packet: LatestHandPacket) {
   const result = packet.result.bankrollDelta > 0 ? 'Nice pot' : packet.result.bankrollDelta < 0 ? 'Tiny tuition' : 'Break-even note'
   const userLine = getUserLine(packet.publicActions)
   return `${result}: ${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} Elo. Want the quick review? I saw ${userLine}. ${packet.lesson}`
-}
-
-export function getReviewPostBlocker(packet: LatestHandPacket, state: Pick<GameSnapshot, 'handId' | 'phase'>) {
-  if (state.handId !== packet.handId) {
-    return `Latest review is for ${packet.handId}, but the running preview is on ${state.handId}. Do not post an old review into a new hand.`
-  }
-  if (state.phase !== 'hand-complete') {
-    return `Latest review is for ${packet.handId}, but that hand is no longer complete in the running preview. Finish the active hand before posting a review.`
-  }
-  return undefined
 }
 
 function getUserLine(actions: PublicAction[]) {

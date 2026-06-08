@@ -3,7 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { actionRequestSchema, sayRequestSchema } from '../shared/contracts'
+import { actionRequestSchema } from '../shared/contracts'
 import { writeLastError } from './bridge'
 import { DomainError, MalformedCommandError } from './errors'
 import { GameService } from './game-service'
@@ -21,7 +21,7 @@ export function createServer(game = new GameService()): FastifyInstance {
       writeLastError({
         schemaVersion: 1,
         at: new Date().toISOString(),
-        command: request.url.includes('say') ? 'game:say' : 'game:act',
+        command: 'game:act',
         code: code as never,
         message
       })
@@ -35,12 +35,6 @@ export function createServer(game = new GameService()): FastifyInstance {
     const parsed = actionRequestSchema.safeParse(request.body)
     if (!parsed.success) throw new MalformedCommandError(parsed.error.issues[0]?.message)
     return { ok: true, state: game.submitAction(parsed.data) }
-  })
-
-  app.post('/api/say', async (request) => {
-    const parsed = sayRequestSchema.safeParse(request.body)
-    if (!parsed.success) throw new MalformedCommandError(parsed.error.issues[0]?.message)
-    return { ok: true, state: game.addTableTalk(parsed.data) }
   })
 
   app.post('/api/uplift/fallback', async () => ({ ok: true, state: game.useUpliftFallback() }))

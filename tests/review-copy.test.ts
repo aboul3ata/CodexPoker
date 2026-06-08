@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LatestHandPacket } from '../src/shared/contracts'
-import { buildReviewBrief, buildReviewMessage, getReviewPostBlocker } from '../src/shared/review-copy'
+import { buildReviewBrief, buildReviewMessage } from '../src/shared/review-copy'
 
 const packet: LatestHandPacket = {
   schemaVersion: 1,
@@ -60,11 +60,5 @@ describe('review copy', () => {
     })
 
     expect(message).toContain('Break-even note')
-  })
-
-  it('allows review posting only while the preview is still on that completed hand', () => {
-    expect(getReviewPostBlocker(packet, { handId: 'hand_test', phase: 'hand-complete' })).toBeUndefined()
-    expect(getReviewPostBlocker(packet, { handId: 'hand_next', phase: 'playing' })).toContain('old review')
-    expect(getReviewPostBlocker(packet, { handId: 'hand_test', phase: 'playing' })).toContain('no longer complete')
   })
 })

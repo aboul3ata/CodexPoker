@@ -4,14 +4,12 @@ import type {
   ActionKind,
   ActionRequest,
   Card,
-  ChatMessage,
   CurrentTurnPacket,
   GameSnapshot,
   LegalAction,
   LatestHandPacket,
   PublicAction,
   ReviewSnapshot,
-  SayRequest,
   SeatId,
   SeatView,
   Street
@@ -57,7 +55,6 @@ export class GameService {
   private dealerSeat = 5
   private turnToken = ''
   private publicActions: PublicAction[] = []
-  private chat: ChatMessage[] = []
   private review: ReviewSnapshot | undefined
   private handStartStacks: Record<SeatId, number>
   private seatStacks: Record<SeatId, number>
@@ -108,7 +105,6 @@ export class GameService {
       seats: this.getSeatViews(),
       legalActions: isComplete || !actingSeatId ? [] : this.getLegalActions(),
       publicActions: this.publicActions,
-      chat: this.chat.slice(-24),
       bankroll: this.profile.bankroll,
       rating: this.profile.rating,
       history: this.storage.getHandHistory(12),
@@ -132,35 +128,11 @@ export class GameService {
     return this.getSnapshot()
   }
 
-  addTableTalk(request: SayRequest) {
-    if (request.seat === 'uplift' && request.turnToken && request.turnToken !== this.turnToken) {
-      throw new StaleTurnError('That table-talk token is stale.')
-    }
-    this.chat.push({
-      id: randomUUID(),
-      seatId: request.seat,
-      name: seatMeta[request.seat].name,
-      message: request.message,
-      at: new Date().toISOString(),
-      tone: request.seat === 'uplift' ? 'banter' : 'system'
-    })
-    this.emit()
-    return this.getSnapshot()
-  }
-
   useUpliftFallback() {
     if (this.review) return this.getSnapshot()
     const actingSeatId = this.getActingSeat()
     if (actingSeatId !== 'uplift') throw new NotToActError('Uplift is not to act.')
     const botAction = this.chooseBotAction('uplift')
-    this.chat.push({
-      id: randomUUID(),
-      seatId: 'uplift',
-      name: 'Uplift',
-      message: this.fallbackLine(botAction.action),
-      at: new Date().toISOString(),
-      tone: 'banter'
-    })
     this.applyAction('uplift', botAction.action, botAction.amount)
     this.advanceUntilHumanOrCodex()
     this.emit()
@@ -193,16 +165,6 @@ export class GameService {
     this.userPfrThisHand = false
     this.userFoldedThisHand = false
     this.tableNotice = this.ensurePlayableStacks()
-    this.chat = [
-      {
-        id: randomUUID(),
-        seatId: 'uplift',
-        name: 'Uplift',
-        message: this.tableNotice ?? 'New hand. I promise not to peek at your cards.',
-        at: new Date().toISOString(),
-        tone: this.tableNotice ? 'system' : 'banter'
-      }
-    ]
     this.handStartStacks = { ...this.seatStacks }
     this.table = new PokerTableConstructor({ smallBlind: 50, bigBlind: 100 }, seatOrder.length)
     for (const seatId of seatOrder) {
@@ -326,14 +288,6 @@ export class GameService {
     }
     this.storage.recordHand(this.review)
     this.writeLatestHand()
-    this.chat.push({
-      id: randomUUID(),
-      seatId: 'uplift',
-      name: 'Uplift',
-      message: `Want to review that one? ${this.review.lesson}`,
-      at: new Date().toISOString(),
-      tone: 'coach'
-    })
   }
 
   private chooseBotAction(seatId: SeatId): { action: ActionKind; amount?: number } {
@@ -508,13 +462,6 @@ export class GameService {
     if (folded && bankrollDelta <= 0) return 'Good fold discipline starts with asking what story the raise is telling.'
     if (bankrollDelta > 0) return 'You found a profitable line. Keep the pot story in mind before adding pressure.'
     return 'Next time, pause on the biggest bet of the hand and compare the price to the pot.'
-  }
-
-  private fallbackLine(action: ActionKind) {
-    if (action === 'fold') return 'I am letting this one go. No heroic speeches.'
-    if (action === 'raise' || action === 'bet') return 'Tiny classroom rule: pressure belongs where the story is clear.'
-    if (action === 'call') return 'I will pay to see the next card. Politely suspicious.'
-    return 'I check. Your move.'
   }
 
   private getBridgeStatus(actingSeatId: SeatId | null, isComplete: boolean): GameSnapshot['bridgeStatus'] {

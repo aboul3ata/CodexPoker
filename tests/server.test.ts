@@ -60,4 +60,14 @@ describe('Fastify API', () => {
     expect(response.statusCode).toBe(400)
     expect(response.json().code).toBe('malformed_command')
   })
+
+  it('does not expose an app table-talk route', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/say',
+      payload: { seat: 'uplift', message: 'hello from the old app chat' }
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
 })

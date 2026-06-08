@@ -37,15 +37,6 @@ export type SeatView = {
   revealedCards?: Card[]
 }
 
-export type ChatMessage = {
-  id: string
-  seatId: SeatId
-  name: string
-  message: string
-  at: string
-  tone: 'banter' | 'system' | 'coach'
-}
-
 export type PublicAction = {
   seq: number
   seatId: SeatId
@@ -95,7 +86,6 @@ export type GameSnapshot = {
   seats: SeatView[]
   legalActions: LegalAction[]
   publicActions: PublicAction[]
-  chat: ChatMessage[]
   bankroll: number
   rating: number
   history: HandHistoryPoint[]
@@ -114,14 +104,6 @@ export const actionRequestSchema = z.object({
 })
 
 export type ActionRequest = z.infer<typeof actionRequestSchema>
-
-export const sayRequestSchema = z.object({
-  seat: z.enum(seatIds),
-  turnToken: z.string().optional(),
-  message: z.string().trim().min(1).max(240)
-})
-
-export type SayRequest = z.infer<typeof sayRequestSchema>
 
 export type CurrentTurnPacket = {
   schemaVersion: 1
@@ -167,7 +149,7 @@ export type LatestHandPacket = {
 export type LastErrorPacket = {
   schemaVersion: 1
   at: string
-  command: 'game:act' | 'game:say'
+  command: 'game:act'
   handId?: string
   turnToken?: string
   code: 'invalid_action' | 'stale_turn' | 'wrong_seat' | 'not_to_act' | 'malformed_command' | 'storage_unavailable'
