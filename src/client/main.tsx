@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, type Root } from 'react-dom/client'
 import { Bot, ChevronRight, RotateCcw, Sparkles, Zap } from 'lucide-react'
-import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, SeatId, SeatView } from '../shared/contracts'
+import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, ReviewSnapshot, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
 const avatarBySeat: Record<SeatId, string> = {
@@ -35,11 +35,12 @@ function App() {
 
   async function post(path: string, body?: unknown) {
     setError(null)
-    const response = await fetch(path, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined
-    })
+    const requestInit: RequestInit = { method: 'POST' }
+    if (body !== undefined) {
+      requestInit.headers = { 'content-type': 'application/json' }
+      requestInit.body = JSON.stringify(body)
+    }
+    const response = await fetch(path, requestInit)
     const payload = await response.json()
     if (!response.ok) {
       setError(payload.message ?? 'Something went wrong.')
@@ -86,7 +87,7 @@ function App() {
         </div>
       </section>
 
-      <section className="play-layout">
+      <section className={`play-layout ${state.phase}`}>
         <section className="table-column" aria-label="Poker table">
           {error ? <div className="error-banner" role="alert">{error}</div> : null}
           {state.tableNotice ? <div className="table-notice">{state.tableNotice}</div> : null}
@@ -219,7 +220,7 @@ function ActionFooter({
   if (state.phase === 'hand-complete') {
     return (
       <footer className="action-footer complete">
-        <button className="primary-action" onClick={onNextHand}>
+        <button className="primary-action" onClick={() => onNextHand()} type="button">
           Next hand <ChevronRight size={18} />
         </button>
       </footer>
@@ -238,14 +239,14 @@ function ActionFooter({
           </div>
         </>
       ) : canFastForward ? (
-        <button className="primary-action" onClick={onFastForward}>
+        <button className="primary-action" onClick={() => onFastForward()} type="button">
           <RotateCcw size={18} /> Simulate to result
         </button>
       ) : (
         <div className="waiting-copy">Local bots are moving.</div>
       )}
       {canFastForward ? (
-        <button className="secondary-action" onClick={onFastForward}>Fast-fold result</button>
+        <button className="secondary-action" onClick={() => onFastForward()} type="button">Fast-fold result</button>
       ) : null}
     </footer>
   )
@@ -279,6 +280,7 @@ function UserActionPanel({
             key={action.kind}
             className="secondary-action"
             onClick={() => onAction(action)}
+            type="button"
           >
             {actionLabel(action)}
           </button>
@@ -325,7 +327,7 @@ function UserActionPanel({
             type="range"
             value={clampedAmount}
           />
-          <button className="primary-action commit-wager" onClick={() => onAction(wagerAction, clampedAmount)}>
+          <button className="primary-action commit-wager" onClick={() => onAction(wagerAction, clampedAmount)} type="button">
             {wagerAction.kind === 'raise' ? 'Raise to' : 'Bet'} {formatChips(clampedAmount)}
           </button>
         </section>
@@ -344,12 +346,14 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
       </div>
       {review ? (
         <>
+          <ReviewMoment review={review} />
           <div className="result-card">
             <span>{review.bankrollDelta >= 0 ? '+' : ''}{formatChips(review.bankrollDelta)}</span>
             <strong>{review.ratingDelta >= 0 ? '+' : ''}{review.ratingDelta} Elo</strong>
           </div>
           <h2>{review.winningHandName}</h2>
           <p>{review.lesson}</p>
+          <button className="primary-action wide" onClick={() => onNextHand()} type="button">Next hand</button>
           <div className="timeline">
             {review.publicActions.slice(-8).map((action) => (
               <div className={action.seatId === 'user' ? 'hot' : ''} key={action.seq}>
@@ -358,7 +362,6 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
               </div>
             ))}
           </div>
-          <button className="primary-action wide" onClick={onNextHand}>Next hand</button>
         </>
       ) : (
         <>
@@ -369,6 +372,37 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
       )}
       <StackTrail history={state.history} bankroll={state.bankroll} rating={state.rating} />
     </aside>
+  )
+}
+
+function ReviewMoment({ review }: { review: ReviewSnapshot }) {
+  const outcome = review.bankrollDelta > 0 ? 'win' : review.bankrollDelta < 0 ? 'loss' : 'even'
+  const label = outcome === 'win' ? 'Pot collected' : outcome === 'loss' ? 'Lesson banked' : 'Clean split'
+  const line = review.winningSeatIds.includes('user')
+    ? 'You found the line'
+    : review.winningSeatIds.includes('uplift')
+      ? 'Uplift got there'
+      : 'Table result'
+
+  return (
+    <div className={`review-moment ${outcome}`} aria-label={`${label}: ${line}`}>
+      <div className="moment-avatar">
+        <img src={avatarBySeat.uplift} alt="" />
+      </div>
+      <div className="moment-copy">
+        <span>{label}</span>
+        <strong>{line}</strong>
+      </div>
+      {[0, 1, 2].map((chip) => (
+        <img
+          aria-hidden="true"
+          className={`burst-chip chip-${chip}`}
+          key={chip}
+          src="/assets/generated/chip.svg"
+          alt=""
+        />
+      ))}
+    </div>
   )
 }
 
@@ -504,4 +538,7 @@ function seatName(state: GameSnapshot, seatId: SeatId) {
   return state.seats.find((seat) => seat.seatId === seatId)?.name ?? seatId
 }
 
-createRoot(document.getElementById('root')!).render(<App />)
+const rootElement = document.getElementById('root')!
+const windowWithRoot = window as Window & { __codexPokerRoot?: Root }
+windowWithRoot.__codexPokerRoot ??= createRoot(rootElement)
+windowWithRoot.__codexPokerRoot.render(<App />)

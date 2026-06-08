@@ -103,6 +103,13 @@ test('offers a Codex review command after a completed hand', async ({ page, requ
   expect(state.pot).toBe(state.review.finalPot)
   await page.reload()
   await expect(page.getByText('Uplift review', { exact: true })).toBeVisible()
+  const reviewMoment = page.locator('.review-moment')
+  await expect(reviewMoment).toBeVisible()
+  const reviewMomentBox = await reviewMoment.boundingBox()
+  const viewport = page.viewportSize()
+  expect(reviewMomentBox?.y).toBeLessThan(viewport?.height ?? 900)
+  const reviewNextHandBox = await page.locator('.review-panel .primary-action.wide').boundingBox()
+  expect(reviewNextHandBox?.y).toBeLessThan(viewport?.height ?? 900)
   await expect(page.getByText(state.review.winningHandName).first()).toBeVisible()
   await expect(page.getByText(state.review.lesson).first()).toBeVisible()
   await expect(page.getByText('Review packet is ready')).toHaveCount(0)
@@ -110,4 +117,9 @@ test('offers a Codex review command after a completed hand', async ({ page, requ
   if (state.board.length > 0) {
     await expect(page.locator('.community-cards .playing-card.empty')).toHaveCount(5 - state.board.length)
   }
+
+  await page.locator('.review-panel .primary-action.wide').click()
+  const freshState = (await (await request.get('/api/state')).json()).state
+  expect(freshState.phase).toBe('playing')
+  expect(freshState.review).toBeUndefined()
 })
