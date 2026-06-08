@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
+  <title id="title">Pip avatar</title>
+  <rect width="160" height="160" rx="34" fill="#39c7a0"/>
+  <circle cx="80" cy="80" r="50" fill="#fffef1"/>
+  <circle cx="61" cy="77" r="7" fill="#17323b"/>
+  <circle cx="99" cy="77" r="7" fill="#17323b"/>
+  <path d="M58 102c14 9 31 9 44 0" fill="none" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
+  <path d="M44 50l27-18 42 17" fill="none" stroke="#206dff" stroke-width="11" stroke-linecap="round"/>
+</svg>

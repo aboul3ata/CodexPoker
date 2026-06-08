@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
+  <title id="title">Nova avatar</title>
+  <rect width="160" height="160" rx="34" fill="#f25f5c"/>
+  <circle cx="80" cy="78" r="49" fill="#fffef1"/>
+  <path d="M45 55c20-20 51-22 75 0" fill="#f9d84a"/>
+  <circle cx="62" cy="78" r="7" fill="#17323b"/>
+  <circle cx="98" cy="78" r="7" fill="#17323b"/>
+  <path d="M65 103c10 6 21 6 31 0" fill="none" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
+</svg>

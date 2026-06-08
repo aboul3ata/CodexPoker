@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 132" role="img" aria-labelledby="title">
+  <title id="title">CodexPoker card back</title>
+  <rect x="4" y="4" width="88" height="124" rx="14" fill="#206dff" stroke="#17323b" stroke-width="5"/>
+  <path d="M25 33h46v66H25z" rx="8" fill="#fffef1"/>
+  <path d="M33 46h30M33 62h30M33 78h30" stroke="#39c7a0" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="70" cy="96" r="9" fill="#f9d84a"/>
+</svg>

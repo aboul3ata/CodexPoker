@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title">
+  <title id="title">Poker chip</title>
+  <circle cx="60" cy="60" r="52" fill="#f25f5c" stroke="#17323b" stroke-width="6"/>
+  <circle cx="60" cy="60" r="31" fill="#fffef1" stroke="#17323b" stroke-width="5"/>
+  <path d="M60 10v24M60 86v24M10 60h24M86 60h24" stroke="#fffef1" stroke-width="12" stroke-linecap="round"/>
+  <text x="60" y="69" text-anchor="middle" font-size="25" font-weight="800" fill="#17323b">50</text>
+</svg>

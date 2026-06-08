@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
+  <title id="title">Uplift avatar</title>
+  <rect width="160" height="160" rx="36" fill="#206dff"/>
+  <circle cx="80" cy="72" r="48" fill="#fffef1"/>
+  <circle cx="62" cy="69" r="8" fill="#17323b"/>
+  <circle cx="98" cy="69" r="8" fill="#17323b"/>
+  <path d="M58 96c12 13 31 13 44 0" fill="none" stroke="#17323b" stroke-width="8" stroke-linecap="round"/>
+  <path d="M48 35c18-18 47-20 67 0" fill="none" stroke="#f9d84a" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="121" cy="39" r="12" fill="#f25f5c"/>
+</svg>
