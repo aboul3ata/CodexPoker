@@ -1,24 +1,12 @@
-import type { ActionKind, GameSnapshot, LegalAction } from './contracts'
+import type { GameSnapshot } from './contracts'
 
 export type CodexCommandAdvice = {
   turn?: string
-  act?: string
   next?: string
   review?: string
 }
 
-export function chooseCodexAction(actions: LegalAction[]): { kind: ActionKind; amount?: number } {
-  const check = actions.find((action) => action.kind === 'check')
-  if (check) return { kind: 'check' }
-  const call = actions.find((action) => action.kind === 'call')
-  if (call && (call.toCall ?? 0) <= 200) return { kind: 'call' }
-  const raise = actions.find((action) => action.kind === 'raise')
-  if (raise && raise.min && raise.min <= 300) return { kind: 'raise', amount: raise.min }
-  const fold = actions.find((action) => action.kind === 'fold')
-  return { kind: fold?.kind ?? actions[0]?.kind ?? 'fold' }
-}
-
-export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'phase' | 'legalActions' | 'turnToken'>): CodexCommandAdvice {
+export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'phase'>): CodexCommandAdvice {
   if (state.phase === 'hand-complete') {
     return {
       review: 'npm run --silent game:review',
@@ -28,11 +16,8 @@ export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'p
 
   if (state.actingSeatId !== 'uplift') return {}
 
-  const action = chooseCodexAction(state.legalActions)
-  const amountArg = action.amount ? ` --amount ${action.amount}` : ''
   return {
-    turn: 'npm run --silent game:turn',
-    act: `npm run --silent game:act -- --seat uplift --turn-token ${state.turnToken} --action ${action.kind}${amountArg}`
+    turn: 'npm run --silent game:turn'
   }
 }
 

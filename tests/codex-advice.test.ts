@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GameSnapshot } from '../src/shared/contracts'
-import { buildCodexCommands, chooseCodexAction, describeCodexNextStep } from '../src/shared/codex-advice'
+import { buildCodexCommands, describeCodexNextStep } from '../src/shared/codex-advice'
 
 const baseState: Pick<GameSnapshot, 'actingSeatId' | 'phase' | 'legalActions' | 'turnToken' | 'bridgeStatus'> = {
   actingSeatId: 'uplift',
@@ -15,13 +15,11 @@ const baseState: Pick<GameSnapshot, 'actingSeatId' | 'phase' | 'legalActions' | 
 }
 
 describe('Codex command advice', () => {
-  it('prefers non-fold legal actions for Uplift turn commands', () => {
-    expect(chooseCodexAction(baseState.legalActions)).toEqual({ kind: 'call' })
-
+  it('sends Uplift through private turn context instead of public card-blind action advice', () => {
     const commands = buildCodexCommands(baseState)
+
     expect(commands.turn).toBe('npm run --silent game:turn')
-    expect(commands.act).toContain('--seat uplift')
-    expect(commands.act).toContain('--action call')
+    expect(commands).not.toHaveProperty('act')
     expect(commands).not.toHaveProperty('say')
   })
 
@@ -29,8 +27,7 @@ describe('Codex command advice', () => {
     const commands = buildCodexCommands({
       ...baseState,
       phase: 'hand-complete',
-      actingSeatId: null,
-      legalActions: []
+      actingSeatId: null
     })
 
     expect(commands).toEqual({

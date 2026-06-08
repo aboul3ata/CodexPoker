@@ -24,6 +24,7 @@ npm run game:state
 ```
 
 That prints the current hand, recent public action trail, a `codexChat` guide for how Uplift should speak in this chat, and the safest next Codex command for the current phase. On Uplift's active turn it includes a `privateTurn` reference to `data/bridge/current-turn.json`, but the default state output does not print Uplift's hole cards.
+`game:state` intentionally does not suggest a ready `game:act` command for Uplift turns; run `game:turn` first so the decision uses the private hand context.
 
 The intended loop is:
 
