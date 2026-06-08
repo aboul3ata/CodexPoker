@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { ChevronRight, RotateCcw, Sparkles, UsersRound, X, Zap } from 'lucide-react'
+import { Bot, ChevronRight, MessageCircle, RotateCcw, Sparkles, UserRound, UsersRound, X, Zap } from 'lucide-react'
 import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, PublicAction, ReviewSnapshot, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
@@ -245,6 +245,7 @@ function PokerTable({ state }: { state: GameSnapshot }) {
             <img src="/assets/generated/chip.svg" alt="" />
             <span>{formatChips(state.pot)}</span>
           </div>
+          <LatestActionBurst state={state} />
           <ActionRail state={state} />
           <div className="community-cards" aria-label="Community cards">
             {Array.from({ length: 5 }).map((_, index) => (
@@ -269,6 +270,9 @@ function Seat({ seat, index }: { seat: SeatView; index: number }) {
       className={`seat seat-${index} ${seat.kind} ${seat.isToAct ? 'to-act' : ''} ${seat.isFolded ? 'folded' : ''}`}
     >
       <img src={avatarBySeat[seat.seatId]} alt={`${seat.name} avatar`} />
+      <span className={`seat-kind-badge ${seat.kind}`} aria-label={seatKindLabel(seat.kind)}>
+        <SeatKindIcon kind={seat.kind} />
+      </span>
       <div>
         <strong>{seat.name}</strong>
         <span>{seat.providerLabel}</span>
@@ -285,6 +289,20 @@ function Seat({ seat, index }: { seat: SeatView; index: number }) {
       ) : null}
     </article>
   )
+}
+
+function SeatKindIcon({ kind }: { kind: SeatView['kind'] }) {
+  if (kind === 'bot') return <Bot size={14} strokeWidth={3} />
+  if (kind === 'codex') return <MessageCircle size={14} strokeWidth={3} />
+  return <UserRound size={14} strokeWidth={3} />
+}
+
+function seatKindLabel(kind: SeatView['kind']) {
+  return {
+    bot: 'Local bot',
+    codex: 'Codex chat seat',
+    human: 'Human seat'
+  }[kind]
 }
 
 function MiniCard({ card }: { card: Card }) {
@@ -306,6 +324,31 @@ function PlayingCard({ card, muted, large }: { card?: Card; muted?: boolean; lar
       <span>{card.rank}</span>
       <b>{suitSymbol(card.suit)}</b>
     </div>
+  )
+}
+
+function LatestActionBurst({ state }: { state: GameSnapshot }) {
+  const lastAction = state.publicActions.at(-1)
+  const actor = lastAction ? state.seats.find((seat) => seat.seatId === lastAction.seatId) : undefined
+  const kind = actor?.kind ?? 'codex'
+
+  return (
+    <section
+      aria-live="polite"
+      className={`latest-action-burst ${lastAction ? kind : 'idle'}`}
+      key={lastAction?.seq ?? 'opening'}
+    >
+      <div className="burst-avatar">
+        <img src={lastAction ? avatarBySeat[lastAction.seatId] : avatarBySeat.uplift} alt="" />
+        <span className={`seat-kind-badge ${kind}`} aria-hidden="true">
+          <SeatKindIcon kind={kind} />
+        </span>
+      </div>
+      <div className="burst-copy">
+        <span>{lastAction ? `${lastAction.street} action` : 'Opening deal'}</span>
+        <strong>{lastAction ? formatActionLine(lastAction) : 'Cards are in the air'}</strong>
+      </div>
+    </section>
   )
 }
 
@@ -332,12 +375,18 @@ function ActionRail({ state }: { state: GameSnapshot }) {
 }
 
 function ActionBeat({ action }: { action: PublicAction }) {
+  const kind = seatKindFor(action.seatId)
   return (
-    <article className={`action-beat ${action.seatId === 'user' ? 'user' : ''}`}>
-      <img src={avatarBySeat[action.seatId]} alt="" />
+    <article className={`action-beat ${kind}`}>
+      <div className="beat-avatar">
+        <img src={avatarBySeat[action.seatId]} alt="" />
+        <span className={`seat-kind-badge ${kind}`} aria-hidden="true">
+          <SeatKindIcon kind={kind} />
+        </span>
+      </div>
       <div>
         <span>{action.street}</span>
-        <strong>{action.name} {formatActionKind(action.action)}</strong>
+        <strong>{formatActionLine(action)}</strong>
       </div>
       {action.amount ? <em>{formatChips(action.amount)}</em> : null}
     </article>
@@ -399,10 +448,13 @@ function UpliftBridgePrompt({ state }: { state: GameSnapshot }) {
       </div>
       <div className="codex-turn-copy">
         <span>Uplift turn</span>
-        <strong>Meet me in this Codex chat.</strong>
+        <strong>Codex should act now.</strong>
         <p>{buildUpliftBridgeLine(state)}</p>
       </div>
-      <code>npm run --silent game:codex</code>
+      <div className="codex-command-stack" aria-label="Codex turn commands">
+        <code>npm run --silent game:codex</code>
+        <code>npm run --silent game:play</code>
+      </div>
     </section>
   )
 }
@@ -650,6 +702,21 @@ function actionLabel(action: LegalAction) {
 
 function formatActionKind(action: PublicAction['action']) {
   return action[0].toUpperCase() + action.slice(1)
+}
+
+function formatActionLine(action: PublicAction) {
+  if (action.action === 'raise') return `${action.name} raises to ${formatChips(action.amount ?? 0)}`
+  if (action.action === 'bet') return `${action.name} bets ${formatChips(action.amount ?? 0)}`
+  if (action.action === 'call') return `${action.name} calls${action.amount ? ` ${formatChips(action.amount)}` : ''}`
+  if (action.action === 'check') return `${action.name} checks`
+  if (action.action === 'fold') return `${action.name} folds`
+  return `${action.name} ${formatActionKind(action.action)}`
+}
+
+function seatKindFor(seatId: SeatId): SeatView['kind'] {
+  if (seatId === 'user') return 'human'
+  if (seatId === 'uplift') return 'codex'
+  return 'bot'
 }
 
 function buildAmountPresets(action: LegalAction, pot: number) {
