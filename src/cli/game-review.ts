@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { LatestHandPacket } from '../shared/contracts'
-import { buildReviewBrief, buildReviewMessage } from '../shared/review-copy'
+import { buildCoachingPlan, buildReviewBrief, buildReviewMessage } from '../shared/review-copy'
 import { parseArgs } from './client'
 
 const args = parseArgs(process.argv.slice(2))
@@ -19,6 +19,7 @@ const output = {
   handId: packet.handId,
   reviewPrompt: packet.reviewPrompt,
   brief: buildReviewBrief(packet),
+  coachingPlan: buildCoachingPlan(packet),
   suggestedMessage,
   protocol: {
     destination: 'Codex chat',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LatestHandPacket } from '../src/shared/contracts'
-import { buildReviewBrief, buildReviewMessage } from '../src/shared/review-copy'
+import { buildCoachingPlan, buildReviewBrief, buildReviewMessage } from '../src/shared/review-copy'
 
 const packet: LatestHandPacket = {
   schemaVersion: 1,
@@ -51,6 +51,7 @@ describe('review copy', () => {
     expect(message).toContain('Tiny tuition')
     expect(message).toContain('Want the quick review?')
     expect(message).toContain('preflop call 100, flop fold')
+    expect(message).toContain('focus spot')
   })
 
   it('does not call a break-even hand a win', () => {
@@ -60,5 +61,16 @@ describe('review copy', () => {
     })
 
     expect(message).toContain('Break-even note')
+  })
+
+  it('builds a structured coaching plan for chat review', () => {
+    const plan = buildCoachingPlan(packet)
+
+    expect(plan.outcome).toBe('lost')
+    expect(plan.focusSpot).toContain('flop fold')
+    expect(plan.focusSpot).toContain('Uplift')
+    expect(plan.didWell).toContain('let the hand go')
+    expect(plan.adjustment).toContain('before calling pressure')
+    expect(plan.reviewScript[0]).toContain('Want the quick review?')
   })
 })

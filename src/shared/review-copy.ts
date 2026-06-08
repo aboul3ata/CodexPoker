@@ -32,7 +32,52 @@ export function buildReviewBrief(packet: LatestHandPacket) {
 export function buildReviewMessage(packet: LatestHandPacket) {
   const result = packet.result.bankrollDelta > 0 ? 'Nice pot' : packet.result.bankrollDelta < 0 ? 'Tiny tuition' : 'Break-even note'
   const userLine = getUserLine(packet.publicActions)
-  return `${result}: ${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} Elo. Want the quick review? I saw ${userLine}. ${packet.lesson}`
+  const plan = buildCoachingPlan(packet)
+  return `${result}: ${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} Elo. Want the quick review? I saw ${userLine}. ${plan.focusSpot}`
+}
+
+export function buildCoachingPlan(packet: LatestHandPacket) {
+  const userActions = packet.publicActions.filter((action) => action.seatId === 'user')
+  const folded = userActions.some((action) => action.action === 'fold')
+  const investedAction = [...userActions].reverse().find((action) => action.amount && action.amount > 0)
+  const lastUserAction = userActions.at(-1)
+  const biggestPressure = [...packet.publicActions]
+    .filter((action) => action.seatId !== 'user' && action.amount)
+    .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))[0]
+  const resultLabel = packet.result.bankrollDelta > 0 ? 'won' : packet.result.bankrollDelta < 0 ? 'lost' : 'split'
+  const focusStreet = lastUserAction?.street ?? biggestPressure?.street ?? 'preflop'
+
+  const focusSpot = folded && biggestPressure
+    ? `The focus spot is your ${focusStreet} fold after ${biggestPressure.name} put ${formatChips(biggestPressure.amount ?? 0)} in.`
+    : investedAction
+      ? `The focus spot is your ${investedAction.street} ${formatActionKind(investedAction.action)} for ${formatChips(investedAction.amount ?? 0)}.`
+      : `The focus spot is the ${focusStreet} decision where the pot story changed.`
+
+  const didWell = folded
+    ? 'Good: you let the hand go instead of turning one uncertain street into two expensive ones.'
+    : packet.result.bankrollDelta >= 0
+      ? 'Good: you found a line that kept the result stable or profitable.'
+      : 'Good: you reached a decision point we can learn from instead of guessing after the fact.'
+
+  const adjustment = biggestPressure
+    ? `Next hand: before calling pressure, name the bettor, price, and one worse hand that pays you.`
+    : 'Next hand: before adding chips, say what worse hands continue and what better hands fold.'
+
+  const reviewScript = [
+    `Ask Ali: "Want the quick review?"`,
+    `If yes, start with the ${resultLabel} result and the visible action trail.`,
+    `Then cover: ${focusSpot}`,
+    didWell,
+    adjustment
+  ]
+
+  return {
+    outcome: resultLabel,
+    focusSpot,
+    didWell,
+    adjustment,
+    reviewScript
+  }
 }
 
 function getUserLine(actions: PublicAction[]) {
