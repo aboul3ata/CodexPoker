@@ -412,9 +412,6 @@ function LatestActionBurst({ state }: { state: GameSnapshot }) {
           {botRun.slice(0, 4).map((action) => (
             <div className="burst-avatar" key={action.seq}>
               <img src={avatarBySeat[action.seatId]} alt="" />
-              <span className="seat-kind-badge bot" aria-hidden="true">
-                <SeatKindIcon kind="bot" />
-              </span>
             </div>
           ))}
         </div>
@@ -464,7 +461,7 @@ function formatBotRun(actions: PublicAction[]) {
 }
 
 function ActionRail({ state }: { state: GameSnapshot }) {
-  const beats = state.publicActions.slice(-5)
+  const beats = state.publicActions.slice(-4)
   return (
     <section className="action-rail" aria-label="Table beats">
       <div className="action-rail-head">
@@ -499,7 +496,6 @@ function ActionBeat({ action }: { action: PublicAction }) {
         <span>{action.street}</span>
         <strong>{formatActionLine(action)}</strong>
       </div>
-      {action.amount ? <em>{formatChips(action.amount)}</em> : null}
     </article>
   )
 }

@@ -56,7 +56,7 @@ test('supports a legal user action from the preview', async ({ page, request }) 
   await expect(actionButton).toBeVisible()
   await actionButton.click()
 
-  await expect(page.getByText(/Following table action|Codexxyyy to act|Your turn|Review ready|Bots moving/)).toBeVisible()
+  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy turn|Fold|Call|Check|Bet|Raise|Review ready|Local bots|Simulate to result|Fast-fold result|Next hand/)
   await expect(page.locator('.action-rail .action-beat')).not.toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
 })
@@ -206,7 +206,7 @@ test('lets the user size a bet or raise from the preview', async ({ page, reques
   expect(nextState.publicActions.some((action: { seatId: string; action: string; amount?: number }) =>
     action.seatId === 'user' && action.action === wager.kind && action.amount === amount
   )).toBe(true)
-  await expect(page.getByText(/Following table action|Codexxyyy to act|Your turn|Review ready|Bots moving/)).toBeVisible()
+  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy turn|Fold|Call|Check|Bet|Raise|Review ready|Local bots/)
 })
 
 function trailingBotRun(actions: Array<{ seatId: string; street: string; name: string }>) {
