@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Bot, ChevronRight, MessageCircle, RotateCcw, Send, Sparkles, Zap } from 'lucide-react'
-import type { ActionKind, Card, GameSnapshot, LegalAction, SeatId, SeatView } from '../shared/contracts'
+import type { ActionKind, Card, GameSnapshot, HandHistoryPoint, LegalAction, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
 const avatarBySeat: Record<SeatId, string> = {
@@ -348,7 +348,71 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
           <div className="mini-goal">{state.tendencySummary}</div>
         </>
       )}
+      <StackTrail history={state.history} bankroll={state.bankroll} rating={state.rating} />
     </aside>
+  )
+}
+
+function StackTrail({
+  history,
+  bankroll,
+  rating
+}: {
+  history: HandHistoryPoint[]
+  bankroll: number
+  rating: number
+}) {
+  const values = history.map((point) => point.bankroll)
+  const min = Math.min(...values, bankroll)
+  const max = Math.max(...values, bankroll)
+  const latest = history.at(-1)
+  const bars = history.length ? history : [{
+    handId: 'starting-stack',
+    completedAt: '',
+    bankroll,
+    bankrollDelta: 0,
+    rating,
+    ratingDelta: 0,
+    winningSeatIds: []
+  }]
+
+  return (
+    <section className="stack-trail" aria-label="Balance history">
+      <div className="trail-head">
+        <span>Stack trail</span>
+        <strong>{history.length ? `${history.length} hands` : 'Opening stack'}</strong>
+      </div>
+      <div
+        className={`sparkline ${history.length ? '' : 'empty'} ${bars.length === 1 ? 'solo' : ''}`}
+        role="img"
+        aria-label={`Current bankroll ${formatChips(bankroll)}, progress ${rating}`}
+      >
+        {bars.map((point) => (
+          <span
+            className={point.bankrollDelta >= 0 ? 'up' : 'down'}
+            key={point.handId}
+            style={{ height: `${sparkHeight(point.bankroll, min, max)}%` }}
+            title={`${formatDelta(point.bankrollDelta)} chips`}
+          />
+        ))}
+      </div>
+      <div className="trail-metrics">
+        <div>
+          <span>Bankroll</span>
+          <b>{formatChips(bankroll)}</b>
+        </div>
+        <div>
+          <span>Progress</span>
+          <b>{rating}</b>
+        </div>
+      </div>
+      {latest ? (
+        <div className={`latest-swing ${latest.bankrollDelta >= 0 ? 'up' : 'down'}`}>
+          <span>Latest hand</span>
+          <b>{formatDelta(latest.bankrollDelta)} chips</b>
+        </div>
+      ) : null}
+    </section>
   )
 }
 
@@ -361,6 +425,15 @@ function actionLabel(action: LegalAction) {
 
 function formatChips(value: number) {
   return new Intl.NumberFormat('en-US').format(value)
+}
+
+function formatDelta(value: number) {
+  return `${value >= 0 ? '+' : ''}${formatChips(value)}`
+}
+
+function sparkHeight(value: number, min: number, max: number) {
+  if (max === min) return 52
+  return 28 + ((value - min) / (max - min)) * 60
 }
 
 function suitSymbol(suit: Card['suit']) {

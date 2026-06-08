@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { CurrentTurnPacket, GameSnapshot } from '../src/shared/contracts'
+import type { CurrentTurnPacket, GameSnapshot, LatestHandPacket } from '../src/shared/contracts'
 import { StaleTurnError } from '../src/server/errors'
 import { GameService } from '../src/server/game-service'
 import { Storage } from '../src/server/storage'
@@ -101,8 +101,14 @@ describe('GameService', () => {
     expect(state.phase).toBe('hand-complete')
     expect(state.review).toBeDefined()
     expect(state.bankroll).toBeGreaterThan(0)
+    expect(state.history).toHaveLength(1)
+    expect(state.history[0].bankroll).toBe(state.bankroll)
+    expect(state.history[0].rating).toBe(state.rating)
     expect(state.review?.publicActions.some((action) => action.seatId === 'user' && action.action === 'fold')).toBe(true)
     expect(fs.existsSync('data/bridge/latest-hand.json')).toBe(true)
+    const packet = JSON.parse(fs.readFileSync('data/bridge/latest-hand.json', 'utf8')) as LatestHandPacket
+    expect(packet.result.bankrollAfter).toBe(state.bankroll)
+    expect(packet.result.ratingAfter).toBe(state.rating)
   })
 
   it('plays repeated hands without losing table-chip conservation or hanging', () => {
@@ -125,6 +131,7 @@ describe('GameService', () => {
       expect(state.phase).toBe('hand-complete')
       const totalStacks = state.seats.reduce((sum, seat) => sum + seat.stack, 0)
       expect(totalStacks).toBe(60000)
+      expect(state.history.length).toBe(hand + 1)
       const vpip = Number(state.tendencySummary.match(/VPIP-ish (\\d+)%/)?.[1] ?? 0)
       expect(vpip).toBeLessThanOrEqual(100)
       state = service.startNewHand()

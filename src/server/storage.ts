@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { ReviewSnapshot } from '../shared/contracts'
+import type { HandHistoryPoint, ReviewSnapshot, SeatId } from '../shared/contracts'
 import { dbPath, ensureDataDirs } from './paths'
 
 export type PlayerProfile = {
@@ -73,6 +73,37 @@ export class Storage {
          VALUES (?, ?, ?, ?, ?)`
       )
       .run(review.handId, review.completedAt, review.bankrollDelta, review.ratingDelta, JSON.stringify(review))
+  }
+
+  getHandHistory(limit = 12): HandHistoryPoint[] {
+    const rows = this.db
+      .prepare('SELECT review_json FROM completed_hands ORDER BY completed_at DESC LIMIT ?')
+      .all(limit) as { review_json: string }[]
+
+    let inferredBankroll = defaultProfile.bankroll
+    let inferredRating = defaultProfile.rating
+    return rows
+      .map((row) => JSON.parse(row.review_json) as Partial<ReviewSnapshot> & {
+        handId: string
+        completedAt: string
+        bankrollDelta: number
+        ratingDelta: number
+        winningSeatIds?: SeatId[]
+      })
+      .reverse()
+      .map((review) => {
+        inferredBankroll = typeof review.bankrollAfter === 'number' ? review.bankrollAfter : inferredBankroll + review.bankrollDelta
+        inferredRating = typeof review.ratingAfter === 'number' ? review.ratingAfter : Math.max(100, inferredRating + review.ratingDelta)
+        return {
+          handId: review.handId,
+          completedAt: review.completedAt,
+          bankroll: inferredBankroll,
+          bankrollDelta: review.bankrollDelta,
+          rating: inferredRating,
+          ratingDelta: review.ratingDelta,
+          winningSeatIds: review.winningSeatIds ?? []
+        }
+      })
   }
 
   private getRaw(key: string): string | undefined {

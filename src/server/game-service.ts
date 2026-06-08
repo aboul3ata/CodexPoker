@@ -110,6 +110,7 @@ export class GameService {
       chat: this.chat.slice(-24),
       bankroll: this.profile.bankroll,
       rating: this.profile.rating,
+      history: this.storage.getHandHistory(12),
       tendencySummary: this.getTendencySummary(),
       sessionGoal: 'Win two pots or catch one good fold',
       tableNotice: this.tableNotice,
@@ -308,7 +309,9 @@ export class GameService {
       handId: this.handId,
       completedAt: new Date().toISOString(),
       bankrollDelta,
+      bankrollAfter: this.profile.bankroll,
       ratingDelta,
+      ratingAfter: this.profile.rating,
       winningSeatIds,
       winningHandName,
       lesson: this.buildLesson(bankrollDelta),
@@ -559,7 +562,9 @@ export class GameService {
       userSeat: 'user',
       result: {
         bankrollDelta: this.review.bankrollDelta,
+        bankrollAfter: this.review.bankrollAfter,
         ratingDelta: this.review.ratingDelta,
+        ratingAfter: this.review.ratingAfter,
         winningSeatIds: this.review.winningSeatIds
       },
       visibleDecisionSnapshots: this.publicActions,

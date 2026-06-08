@@ -60,12 +60,24 @@ export type ReviewSnapshot = {
   handId: string
   completedAt: string
   bankrollDelta: number
+  bankrollAfter: number
   ratingDelta: number
+  ratingAfter: number
   winningSeatIds: SeatId[]
   winningHandName: string
   lesson: string
   publicActions: PublicAction[]
   showdownCards: Partial<Record<SeatId, Card[]>>
+}
+
+export type HandHistoryPoint = {
+  handId: string
+  completedAt: string
+  bankroll: number
+  bankrollDelta: number
+  rating: number
+  ratingDelta: number
+  winningSeatIds: SeatId[]
 }
 
 export type GameSnapshot = {
@@ -84,6 +96,7 @@ export type GameSnapshot = {
   chat: ChatMessage[]
   bankroll: number
   rating: number
+  history: HandHistoryPoint[]
   tendencySummary: string
   sessionGoal: string
   tableNotice?: string
@@ -133,7 +146,9 @@ export type LatestHandPacket = {
   userSeat: 'user'
   result: {
     bankrollDelta: number
+    bankrollAfter: number
     ratingDelta: number
+    ratingAfter: number
     winningSeatIds: SeatId[]
   }
   visibleDecisionSnapshots: PublicAction[]

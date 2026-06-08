@@ -6,6 +6,7 @@ test('renders the playable CodexPoker table', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'Poker table' })).toBeVisible()
   await expect(page.getByText(/Table talk/)).toBeVisible()
   await expect(page.getByText('Uplift review', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Balance history' })).toBeVisible()
 })
 
 test('supports table talk and a legal user action', async ({ page }) => {

@@ -16,7 +16,7 @@ export function writeCurrentTurn(packet: CurrentTurnPacket) {
 
 export function clearCurrentTurn() {
   const filePath = path.join(bridgeDir, 'current-turn.json')
-  if (fs.existsSync(filePath)) fs.rmSync(filePath)
+  fs.rmSync(filePath, { force: true })
 }
 
 export function writeLatestHand(packet: LatestHandPacket) {
@@ -29,5 +29,5 @@ export function writeLastError(packet: LastErrorPacket) {
 
 export function clearLastError() {
   const filePath = path.join(bridgeDir, 'last-error.json')
-  if (fs.existsSync(filePath)) fs.rmSync(filePath)
+  fs.rmSync(filePath, { force: true })
 }
