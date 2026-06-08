@@ -150,7 +150,7 @@ describe('GameService', () => {
   })
 
   it('plays repeated hands without losing table-chip conservation or hanging', () => {
-    for (let hand = 0; hand < 10; hand += 1) {
+    for (let hand = 0; hand < 75; hand += 1) {
       let state = service.getSnapshot()
       const startingTableTotal = tableChipTotal(state)
       let guard = 0
@@ -170,10 +170,14 @@ describe('GameService', () => {
       expect(state.phase).toBe('hand-complete')
       expect(state.review?.winningSeatIds.length).toBeGreaterThan(0)
       expect(tableChipTotal(state)).toBe(startingTableTotal)
+      for (const seat of state.seats) {
+        expect(seat.stack).toBeGreaterThanOrEqual(0)
+        expect(Number.isInteger(seat.stack)).toBe(true)
+      }
       for (const winner of state.review?.winningSeatIds ?? []) {
         expect(state.seats.find((seat) => seat.seatId === winner)?.status).toBe('winner')
       }
-      expect(state.history.length).toBe(hand + 1)
+      expect(state.history.length).toBe(Math.min(hand + 1, 12))
       const vpip = Number(state.tendencySummary.match(/VPIP-ish (\\d+)%/)?.[1] ?? 0)
       expect(vpip).toBeLessThanOrEqual(100)
       state = service.startNewHand()

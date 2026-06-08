@@ -15,6 +15,7 @@ import type {
   Street
 } from '../shared/contracts'
 import { clearCurrentTurn, clearLastError, writeCurrentTurn, writeLatestHand } from './bridge'
+import { scoreHolding } from './bot-strength'
 import { InvalidActionError, NotToActError, StaleTurnError } from './errors'
 import { Storage, type PlayerProfile } from './storage'
 
@@ -393,6 +394,7 @@ export class GameService {
     const deltas = {} as Record<SeatId, number>
     const winningSeatIds = this.getWinningSeatIds(reportedDeltas)
     const settledStacks = this.settleStacksWithConservation(reportedStacks, winningSeatIds)
+    this.assertHandAccounting(settledStacks)
     for (const seatId of seatOrder) {
       const stack = settledStacks[seatId]
       this.seatStacks[seatId] = stack
@@ -446,22 +448,35 @@ export class GameService {
     const bet = legal.find((item) => item.kind === 'bet')
     const pressure = this.publicActions.filter((action) => action.street === this.getStreet()).length
     const stack = seat?.stack ?? 0
+    const strength = this.getHoldingStrength(seatId)
+    const callCeiling = Math.max(100, stack * (profile.callStackFraction + strength * 0.16))
+    const looseCallCeiling = Math.max(200, stack * (profile.looseCallStackFraction + strength * 0.2))
+    const raiseChance = Math.min(0.72, profile.raiseBias * (0.45 + strength * 1.45))
+    const betChance = Math.min(0.78, profile.betBias * (0.45 + strength * 1.55))
 
     if (canCheck) {
-      if (bet && pressure <= profile.pressureLimit && Math.random() < profile.betBias) {
+      if (bet && pressure <= profile.pressureLimit && (strength >= 0.74 || Math.random() < betChance)) {
         return { action: 'bet', amount: this.chooseProfileWager(bet, profile) }
       }
-      if (Math.random() < profile.checkBias) return { action: 'check' }
+      if (strength < 0.58 || Math.random() < profile.checkBias) return { action: 'check' }
     }
 
-    if (canCall && toCall <= Math.max(100, stack * profile.callStackFraction)) return { action: 'call' }
-    if (raise && pressure <= profile.pressureLimit && Math.random() < profile.raiseBias) {
+    if (raise && strength >= 0.76 && pressure <= profile.pressureLimit && Math.random() < raiseChance) {
       return { action: 'raise', amount: this.chooseProfileWager(raise, profile) }
     }
-    if (bet && Math.random() < profile.betBias) return { action: 'bet', amount: this.chooseProfileWager(bet, profile) }
-    if (canCall && toCall <= Math.max(200, stack * profile.looseCallStackFraction)) return { action: 'call' }
+    if (canCall && (toCall <= callCeiling || strength >= 0.7)) return { action: 'call' }
+    if (raise && strength >= 0.62 && pressure <= profile.pressureLimit && Math.random() < raiseChance) {
+      return { action: 'raise', amount: this.chooseProfileWager(raise, profile) }
+    }
+    if (bet && strength >= 0.6 && Math.random() < betChance) return { action: 'bet', amount: this.chooseProfileWager(bet, profile) }
+    if (canCall && toCall <= looseCallCeiling) return { action: 'call' }
     if (legal.some((item) => item.kind === 'fold')) return { action: 'fold' }
     return { action: canCheck ? 'check' : 'call' }
+  }
+
+  private getHoldingStrength(seatId: SeatId) {
+    const holes = this.getHoleCardsSafe()[seatMeta[seatId].seatIndex]
+    return scoreHolding(holes, this.getBoardSafe())
   }
 
   private chooseProfileWager(action: LegalAction, profile: AgentActionProfile) {
@@ -526,6 +541,20 @@ export class GameService {
     return settledStacks
   }
 
+  private assertHandAccounting(stacks: Record<SeatId, number>) {
+    const expected = this.sumSeatAmounts(this.handStartStacks)
+    const actual = this.sumSeatAmounts(stacks)
+    if (actual !== expected) {
+      throw new Error(`Accounting invariant failed: table total moved from ${expected} to ${actual}.`)
+    }
+    for (const seatId of seatOrder) {
+      const stack = stacks[seatId]
+      if (!Number.isInteger(stack) || stack < 0) {
+        throw new Error(`Accounting invariant failed: ${seatMeta[seatId].name} has invalid stack ${stack}.`)
+      }
+    }
+  }
+
   private sumSeatAmounts(amounts: Record<SeatId, number>) {
     return seatOrder.reduce((sum, seatId) => sum + amounts[seatId], 0)
   }
@@ -586,10 +615,12 @@ export class GameService {
       const isWinner = winningSeatIds.includes(seatId)
       const cards = seatId === 'user' && !this.review ? holes[index] ?? undefined : undefined
       const revealedCards = this.review ? holes[index] ?? undefined : undefined
+      const stack = this.review ? this.seatStacks[seatId] : seat?.stack ?? this.seatStacks[seatId]
+      const bet = this.review ? 0 : seat?.betSize ?? 0
       return {
         ...seatMeta[seatId],
-        stack: seat?.stack ?? this.seatStacks[seatId],
-        bet: seat?.betSize ?? 0,
+        stack,
+        bet,
         isButton: button === index,
         isToAct: actingSeatId === seatId,
         isFolded,
