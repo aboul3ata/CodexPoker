@@ -21,7 +21,7 @@ Codex can inspect the live preview at any time with:
 npm run game:state
 ```
 
-That prints the current hand, recent public action trail, recent table talk, and the safest next Codex command for the current phase.
+That prints the current hand, recent public action trail, recent table talk, and the safest next Codex command for the current phase. On Uplift's active turn it also includes the matching sanitized `codexTurn` packet with Uplift's hole cards.
 
 When Uplift is to act, the server writes:
 

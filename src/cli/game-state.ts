@@ -1,4 +1,7 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import type { GameSnapshot } from '../shared/contracts'
+import type { CurrentTurnPacket } from '../shared/contracts'
 import { buildCodexCommands, describeCodexNextStep } from '../shared/codex-advice'
 import { getApi } from './client'
 
@@ -11,6 +14,7 @@ getApi('/api/state')
       ok: true,
       summary: describeCodexNextStep(state),
       suggestedCommands: buildCodexCommands(state),
+      codexTurn: getMatchingCurrentTurn(state),
       state: {
         handId: state.handId,
         phase: state.phase,
@@ -54,3 +58,26 @@ getApi('/api/state')
     }
     process.exit(exits[error.code ?? ''] ?? 1)
   })
+
+function getMatchingCurrentTurn(state: GameSnapshot) {
+  if (state.actingSeatId !== 'uplift' || state.phase !== 'playing') return undefined
+
+  const filePath = path.resolve('data/bridge/current-turn.json')
+  if (!fs.existsSync(filePath)) return undefined
+
+  const packet = JSON.parse(fs.readFileSync(filePath, 'utf8')) as CurrentTurnPacket
+  if (packet.handId !== state.handId || packet.turnToken !== state.turnToken) return undefined
+
+  return {
+    handId: packet.handId,
+    seat: packet.seat,
+    turnToken: packet.turnToken,
+    street: packet.street,
+    holeCards: packet.holeCards,
+    board: packet.board,
+    pot: packet.pot,
+    legalActions: packet.legalActions,
+    publicActionHistory: packet.publicActionHistory,
+    userTendencies: packet.userTendencies
+  }
+}
