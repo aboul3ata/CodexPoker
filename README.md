@@ -23,7 +23,14 @@ Codex can inspect the live preview at any time with:
 npm run game:state
 ```
 
-That prints the current hand, recent public action trail, and the safest next Codex command for the current phase. On Uplift's active turn it also includes the matching sanitized `codexTurn` packet with Uplift's hole cards. Those cards are private to Codex/Uplift and should not be revealed in chat before showdown.
+That prints the current hand, recent public action trail, a `codexChat` guide for how Uplift should speak in this chat, and the safest next Codex command for the current phase. On Uplift's active turn it also includes the matching sanitized `codexTurn` packet with Uplift's hole cards. Those cards are private to Codex/Uplift and should not be revealed in chat before showdown.
+
+The intended loop is:
+
+1. Run `npm run --silent game:state`.
+2. Use `codexChat.tableTalkCue` and `codexChat.publicTableStory` to banter in this Codex chat.
+3. If `codexTurn` is present, use its hole cards privately to choose an Uplift action.
+4. Submit only Uplift's move with `npm run --silent game:act -- ...`.
 
 When Uplift is to act, the server writes:
 

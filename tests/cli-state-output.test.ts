@@ -146,5 +146,26 @@ describe('safe CLI state output', () => {
     expect(output.protocol.tableTalk).toContain('Use this Codex chat')
     expect(output.protocol.privateInfo).toContain('must not be revealed')
     expect(output.state).not.toHaveProperty('recentChat')
+    expect(output.codexChat.mode).toBe('ali-to-act')
+    expect(output.codexChat.tableTalkCue).toContain('Wait for Ali to act')
+    expect(output.codexChat.publicTableStory).toContain('last action: Atlas check on flop')
+    expect(output.codexChat.privateGuardrails.join(' ')).toContain('Do not use fallback')
+  })
+
+  it('guides Uplift turns toward chat banter without exposing private cards in the public guide', () => {
+    const output = buildSafeStateOutput({
+      ...baseState,
+      actingSeatId: 'uplift',
+      bridgeStatus: 'waiting-for-codex',
+      turnToken: 'hand_test.12.uplift.token',
+      legalActions: [{ kind: 'fold' }, { kind: 'call', toCall: 150 }]
+    })
+    const guide = JSON.stringify(output.codexChat)
+
+    expect(output.codexChat.mode).toBe('uplift-to-act')
+    expect(output.codexChat.tableTalkCue).toContain('Banter here as Uplift')
+    expect(output.codexChat.privateGuardrails.join(' ')).toContain('codexTurn.holeCards')
+    expect(guide).not.toContain('spades')
+    expect(guide).not.toContain('clubs')
   })
 })
