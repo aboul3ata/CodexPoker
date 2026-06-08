@@ -131,7 +131,6 @@ function App() {
           {error ? <div className="error-banner" role="alert">{error}</div> : null}
           {state.tableNotice ? <div className="table-notice">{state.tableNotice}</div> : null}
           <PokerTable state={state} />
-          <ActionRail state={state} />
           <ActionFooter
             state={state}
             isUserTurn={isUserTurn}
@@ -246,6 +245,7 @@ function PokerTable({ state }: { state: GameSnapshot }) {
             <img src="/assets/generated/chip.svg" alt="" />
             <span>{formatChips(state.pot)}</span>
           </div>
+          <ActionRail state={state} />
           <div className="community-cards" aria-label="Community cards">
             {Array.from({ length: 5 }).map((_, index) => (
               <PlayingCard card={state.board[index]} key={index} muted={!state.board[index]} />

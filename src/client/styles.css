@@ -479,19 +479,21 @@ input:focus-visible {
 }
 
 .action-rail {
-  border-radius: 20px;
-  background: #fff9ef;
-  padding: 10px 12px;
+  width: min(650px, 100%);
+  border-radius: 18px;
+  background: rgba(255, 249, 239, .94);
+  padding: 8px 10px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   align-items: center;
+  backdrop-filter: blur(2px);
 }
 
 .action-rail-head {
   display: grid;
   gap: 2px;
-  min-width: 106px;
+  min-width: 94px;
 }
 
 .action-rail-head span {
@@ -503,7 +505,7 @@ input:focus-visible {
 
 .action-rail-head strong {
   font-family: "Fredoka", "Avenir Next", "Trebuchet MS", sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
 }
 
@@ -511,16 +513,16 @@ input:focus-visible {
   min-width: 0;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(132px, 1fr);
-  gap: 8px;
+  grid-auto-columns: minmax(124px, 1fr);
+  gap: 7px;
   overflow-x: auto;
   scrollbar-width: thin;
-  padding: 2px 0 5px;
+  padding: 1px 0 4px;
 }
 
 .action-beat,
 .beat-empty {
-  min-height: 58px;
+  min-height: 48px;
   display: grid;
   align-items: center;
   border: 2px solid rgba(23, 50, 59, .12);
@@ -530,9 +532,9 @@ input:focus-visible {
 }
 
 .action-beat {
-  grid-template-columns: 36px minmax(0, 1fr) auto;
-  gap: 8px;
-  padding: 7px 8px;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 7px;
+  padding: 6px 7px;
   animation: beat-arrive .18s ease-out both;
 }
 
@@ -543,8 +545,8 @@ input:focus-visible {
 
 .action-beat img,
 .beat-empty img {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
 }
 
 .action-beat div {
@@ -564,7 +566,7 @@ input:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.05;
 }
 
@@ -574,16 +576,16 @@ input:focus-visible {
   background: var(--learn);
   color: var(--ink);
   border: 2px solid rgba(23, 50, 59, .14);
-  padding: 3px 7px;
-  font-size: 12px;
+  padding: 2px 6px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 950;
 }
 
 .beat-empty {
-  grid-template-columns: 36px 1fr;
-  gap: 8px;
-  padding: 7px 8px;
+  grid-template-columns: 30px 1fr;
+  gap: 7px;
+  padding: 6px 7px;
   color: var(--muted);
   font-weight: 950;
 }
