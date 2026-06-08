@@ -18,7 +18,7 @@ const baseState: GameSnapshot = {
   pot: 900,
   seats: [
     seat('user', 'Ali', 'Human', 'Preview player', 'Hero seat', true),
-    seat('uplift', 'Uplift', 'Codex', 'This Codex session', 'Chat rival', false),
+    seat('uplift', 'Codexxyyy', 'Codex', 'This Codex session', 'Chat rival', false),
     seat('pip', 'Pip', 'Local bot', 'Heuristic caller v0', 'Loose caller', false),
     seat('nova', 'Nova', 'Local bot', 'Heuristic pressure v0', 'Pot builder', false),
     seat('clio', 'Clio', 'Local bot', 'Heuristic archivist v0', 'Pattern seat', false),
@@ -64,7 +64,7 @@ const packet: CurrentTurnPacket = {
   userTendencies: baseState.tendencySummary
 }
 
-describe('private Uplift turn output', () => {
+describe('private Codexxyyy turn output', () => {
   it('keeps chatSafe public while decision contains the private cards', () => {
     const output = buildPrivateTurnOutput(baseState, packet, '/tmp/current-turn.json')
 
@@ -80,7 +80,7 @@ describe('private Uplift turn output', () => {
     expect(output.protocol.chatBoundary).toContain('chatSafe')
   })
 
-  it('recommends private pressure for a strong Uplift holding', () => {
+  it('recommends private pressure for a strong Codexxyyy holding', () => {
     const output = buildPrivateTurnOutput(baseState, {
       ...packet,
       board: [
@@ -104,8 +104,8 @@ describe('private Uplift turn output', () => {
     expect(JSON.stringify(output.chatSafe)).not.toContain('clubs')
   })
 
-  it('rejects stale or non-Uplift private turn packets', () => {
-    expect(() => validatePrivateTurn({ ...baseState, actingSeatId: 'user', bridgeStatus: 'user-to-act' }, packet)).toThrow('Uplift is not to act')
+  it('rejects stale or non-Codexxyyy private turn packets', () => {
+    expect(() => validatePrivateTurn({ ...baseState, actingSeatId: 'user', bridgeStatus: 'user-to-act' }, packet)).toThrow('Codexxyyy is not to act')
     expect(() => validatePrivateTurn(baseState, { ...packet, turnToken: 'stale' })).toThrow('stale')
   })
 })

@@ -1,9 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
-  <title id="title">Nova avatar</title>
+  <title id="title">Nova bot avatar</title>
   <rect width="160" height="160" rx="34" fill="#f25f5c"/>
-  <circle cx="80" cy="78" r="49" fill="#fffef1"/>
-  <path d="M45 55c20-20 51-22 75 0" fill="#f9d84a"/>
-  <circle cx="62" cy="78" r="7" fill="#17323b"/>
-  <circle cx="98" cy="78" r="7" fill="#17323b"/>
-  <path d="M65 103c10 6 21 6 31 0" fill="none" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
+  <path d="M80 25v17" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="80" cy="23" r="9" fill="#f9d84a" stroke="#17323b" stroke-width="5"/>
+  <rect x="36" y="42" width="88" height="80" rx="24" fill="#fffef1" stroke="#17323b" stroke-width="6"/>
+  <path d="M48 58h64" stroke="#f9d84a" stroke-width="12" stroke-linecap="round"/>
+  <rect x="51" y="67" width="58" height="27" rx="12" fill="#ffe3e1" stroke="#17323b" stroke-width="5"/>
+  <circle cx="67" cy="80" r="6" fill="#17323b"/>
+  <circle cx="93" cy="80" r="6" fill="#17323b"/>
+  <path d="M67 105h26" stroke="#17323b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M36 80h-10M134 80h-10" stroke="#17323b" stroke-width="8" stroke-linecap="round"/>
+  <rect x="58" y="123" width="44" height="13" rx="7" fill="#f9d84a"/>
 </svg>

@@ -28,7 +28,7 @@ const baseState: GameSnapshot = {
       providerLabel: 'Human',
       modelLabel: 'Preview player',
       tableRole: 'Hero seat',
-      personality: 'Pressure-tests Uplift with live decisions.',
+      personality: 'Pressure-tests Codexxyyy with live decisions.',
       stack: 10200,
       bet: 0,
       isButton: true,
@@ -43,7 +43,7 @@ const baseState: GameSnapshot = {
     {
       seatId: 'uplift',
       seatIndex: 1,
-      name: 'Uplift',
+      name: 'Codexxyyy',
       kind: 'codex',
       providerLabel: 'Codex',
       modelLabel: 'This Codex session',
@@ -174,7 +174,7 @@ describe('safe CLI state output', () => {
     })
   })
 
-  it('guides Uplift turns toward chat banter without exposing private cards in the public guide', () => {
+  it('guides Codexxyyy turns toward chat banter without exposing private cards in the public guide', () => {
     const output = buildSafeStateOutput({
       ...baseState,
       actingSeatId: 'uplift',
@@ -185,7 +185,7 @@ describe('safe CLI state output', () => {
     const guide = JSON.stringify(output.codexChat)
 
     expect(output.codexChat.mode).toBe('uplift-to-act')
-    expect(output.codexChat.tableTalkCue).toContain('Banter here as Uplift')
+    expect(output.codexChat.tableTalkCue).toContain('Banter here as Codexxyyy')
     expect(output.codexChat.tableTalkCue).toContain('game:loop')
     expect(output.codexChat.suggestedTableLine).toContain('public context only')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('private turn file')
@@ -255,7 +255,7 @@ describe('safe CLI state output', () => {
     }
   })
 
-  it('suggests a public chat line after Uplift acts without revealing cards', () => {
+  it('suggests a public chat line after Codexxyyy acts without revealing cards', () => {
     const output = buildSafeStateOutput({
       ...baseState,
       publicActions: [
@@ -263,7 +263,7 @@ describe('safe CLI state output', () => {
         {
           seq: 13,
           seatId: 'uplift',
-          name: 'Uplift',
+          name: 'Codexxyyy',
           street: 'flop',
           action: 'raise',
           amount: 400,

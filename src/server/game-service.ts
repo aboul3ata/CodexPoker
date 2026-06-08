@@ -34,12 +34,12 @@ const seatMeta: Record<SeatId, SeatMeta> = {
     providerLabel: 'Human',
     modelLabel: 'Preview player',
     tableRole: 'Hero seat',
-    personality: 'Pressure-tests Uplift with live decisions.'
+    personality: 'Pressure-tests Codexxyyy with live decisions.'
   },
   uplift: {
     seatId: 'uplift',
     seatIndex: 1,
-    name: 'Uplift',
+    name: 'Codexxyyy',
     kind: 'codex',
     providerLabel: 'Codex',
     modelLabel: 'This Codex session',
@@ -258,7 +258,7 @@ export class GameService {
   useUpliftFallback() {
     if (this.review) return this.getSnapshot()
     const actingSeatId = this.getActingSeat()
-    if (actingSeatId !== 'uplift') throw new NotToActError('Uplift is not to act.')
+    if (actingSeatId !== 'uplift') throw new NotToActError('Codexxyyy is not to act.')
     const botAction = this.chooseBotAction('uplift')
     this.applyAction('uplift', botAction.action, botAction.amount)
     this.advanceUntilHumanOrCodex()

@@ -17,7 +17,7 @@ const packet: LatestHandPacket = {
   visibleDecisionSnapshots: [],
   publicActions: [
     { seq: 1, seatId: 'user', name: 'Ali', street: 'preflop', action: 'call', amount: 100, at: '2026-06-08T14:00:01.000Z' },
-    { seq: 2, seatId: 'uplift', name: 'Uplift', street: 'flop', action: 'bet', amount: 200, at: '2026-06-08T14:00:02.000Z' },
+    { seq: 2, seatId: 'uplift', name: 'Codexxyyy', street: 'flop', action: 'bet', amount: 200, at: '2026-06-08T14:00:02.000Z' },
     { seq: 3, seatId: 'user', name: 'Ali', street: 'flop', action: 'fold', at: '2026-06-08T14:00:03.000Z' }
   ],
   lesson: 'Ask what story the raise is telling before paying.',
@@ -40,12 +40,12 @@ describe('review copy', () => {
     expect(brief).toContain('Result: -150 chips, -2 Elo')
     expect(brief).toContain('Bankroll now: 9,850 chips')
     expect(brief).toContain('Elo now: 998')
-    expect(brief).toContain('Winner: Uplift')
+    expect(brief).toContain('Winner: Codexxyyy')
     expect(brief).toContain('Ali line: preflop call 100, flop fold')
     expect(brief).toContain('Lesson seed: Ask what story the raise is telling before paying.')
   })
 
-  it('builds a concise Uplift review invitation for Codex chat', () => {
+  it('builds a concise Codexxyyy review invitation for Codex chat', () => {
     const message = buildReviewMessage(packet)
 
     expect(message).toContain('Tiny tuition')
@@ -54,7 +54,7 @@ describe('review copy', () => {
     expect(message).toContain('focus spot')
   })
 
-  it('builds an accepted Uplift review with right, revisit, and adjustment sections', () => {
+  it('builds an accepted Codexxyyy review with right, revisit, and adjustment sections', () => {
     const message = buildAcceptedReviewMessage(packet)
 
     expect(message).toContain('Quick review:')
@@ -80,7 +80,7 @@ describe('review copy', () => {
 
     expect(plan.outcome).toBe('lost')
     expect(plan.focusSpot).toContain('flop fold')
-    expect(plan.focusSpot).toContain('Uplift')
+    expect(plan.focusSpot).toContain('Codexxyyy')
     expect(plan.didWell).toContain('let the hand go')
     expect(plan.adjustment).toContain('before calling pressure')
     expect(plan.reviewScript[0]).toContain('Want the quick review?')

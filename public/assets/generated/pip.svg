@@ -1,9 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
-  <title id="title">Pip avatar</title>
+  <title id="title">Pip bot avatar</title>
   <rect width="160" height="160" rx="34" fill="#39c7a0"/>
-  <circle cx="80" cy="80" r="50" fill="#fffef1"/>
-  <circle cx="61" cy="77" r="7" fill="#17323b"/>
-  <circle cx="99" cy="77" r="7" fill="#17323b"/>
-  <path d="M58 102c14 9 31 9 44 0" fill="none" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
-  <path d="M44 50l27-18 42 17" fill="none" stroke="#206dff" stroke-width="11" stroke-linecap="round"/>
+  <path d="M80 26v18" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="80" cy="24" r="9" fill="#f9d84a" stroke="#17323b" stroke-width="5"/>
+  <rect x="38" y="43" width="84" height="78" rx="22" fill="#fffef1" stroke="#17323b" stroke-width="6"/>
+  <rect x="51" y="61" width="58" height="28" rx="12" fill="#d7fff2" stroke="#17323b" stroke-width="5"/>
+  <circle cx="66" cy="75" r="6" fill="#17323b"/>
+  <circle cx="94" cy="75" r="6" fill="#17323b"/>
+  <path d="M66 102c10 6 18 6 28 0" fill="none" stroke="#17323b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M37 78h-10M133 78h-10" stroke="#17323b" stroke-width="8" stroke-linecap="round"/>
+  <rect x="57" y="122" width="46" height="13" rx="7" fill="#206dff"/>
 </svg>

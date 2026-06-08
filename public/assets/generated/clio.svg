@@ -1,9 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
-  <title id="title">Clio avatar</title>
+  <title id="title">Clio bot avatar</title>
   <rect width="160" height="160" rx="34" fill="#b9e8ff"/>
-  <circle cx="80" cy="78" r="49" fill="#fffef1"/>
-  <path d="M51 48c16-13 45-13 60 0" fill="none" stroke="#17323b" stroke-width="10" stroke-linecap="round"/>
-  <circle cx="63" cy="79" r="7" fill="#17323b"/>
-  <circle cx="97" cy="79" r="7" fill="#17323b"/>
-  <path d="M60 103c13 10 28 10 41 0" fill="none" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
+  <path d="M80 27v17" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="80" cy="25" r="9" fill="#39c7a0" stroke="#17323b" stroke-width="5"/>
+  <rect x="37" y="43" width="86" height="79" rx="21" fill="#fffef1" stroke="#17323b" stroke-width="6"/>
+  <rect x="50" y="62" width="60" height="28" rx="12" fill="#edf8ff" stroke="#17323b" stroke-width="5"/>
+  <rect x="61" y="73" width="10" height="10" rx="3" fill="#17323b"/>
+  <rect x="89" y="73" width="10" height="10" rx="3" fill="#17323b"/>
+  <path d="M64 103c10 8 22 8 32 0" fill="none" stroke="#17323b" stroke-width="6" stroke-linecap="round"/>
+  <path d="M38 78h-11M133 78h-11" stroke="#17323b" stroke-width="8" stroke-linecap="round"/>
+  <rect x="56" y="123" width="48" height="13" rx="7" fill="#206dff"/>
 </svg>

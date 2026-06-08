@@ -25,7 +25,7 @@ const packet: LatestHandPacket = {
   visibleDecisionSnapshots: [],
   publicActions: [
     { seq: 1, seatId: 'user', name: 'Ali', street: 'preflop', action: 'call', amount: 100, at: '2026-06-08T14:00:01.000Z' },
-    { seq: 2, seatId: 'uplift', name: 'Uplift', street: 'flop', action: 'bet', amount: 200, at: '2026-06-08T14:00:02.000Z' },
+    { seq: 2, seatId: 'uplift', name: 'Codexxyyy', street: 'flop', action: 'bet', amount: 200, at: '2026-06-08T14:00:02.000Z' },
     { seq: 3, seatId: 'user', name: 'Ali', street: 'flop', action: 'fold', at: '2026-06-08T14:00:03.000Z' }
   ],
   lesson: 'Ask what story the raise is telling before paying.',

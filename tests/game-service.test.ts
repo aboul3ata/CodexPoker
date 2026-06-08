@@ -84,7 +84,7 @@ describe('GameService', () => {
     expect(state.seats.find((seat) => seat.seatId === 'atlas')?.tableRole).toBe('Stack bully')
   })
 
-  it('pauses on Uplift and writes a sanitized Codex bridge packet', () => {
+  it('pauses on Codexxyyy and writes a sanitized Codex bridge packet', () => {
     let state = service.getSnapshot()
     state = userAction(state)
 
@@ -100,7 +100,7 @@ describe('GameService', () => {
     expect(JSON.stringify(packet)).not.toContain('"seed"')
   })
 
-  it('repairs a missing current-turn packet while Uplift is active', () => {
+  it('repairs a missing current-turn packet while Codexxyyy is active', () => {
     let state = service.getSnapshot()
     state = userAction(state)
     const packetPath = path.join(tempDir, 'bridge/current-turn.json')
@@ -116,7 +116,7 @@ describe('GameService', () => {
     expect(packet.turnToken).toBe(state.turnToken)
   })
 
-  it('clears the current-turn packet after Uplift acts', () => {
+  it('clears the current-turn packet after Codexxyyy acts', () => {
     let state = service.getSnapshot()
     state = userAction(state)
     expect(state.actingSeatId).toBe('uplift')

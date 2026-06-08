@@ -11,12 +11,12 @@ getApi('/api/state')
     const currentState = result.state as GameSnapshot | undefined
     if (!currentState) throw Object.assign(new Error('The running preview did not return a game state.'), { code: 'storage_unavailable' })
     if (currentState.phase !== 'playing' || currentState.actingSeatId !== 'uplift') {
-      throw Object.assign(new Error('Uplift is not to act. Keep playing in the preview or run game:state for context.'), { code: 'not_to_act' })
+      throw Object.assign(new Error('Codexxyyy is not to act. Keep playing in the preview or run game:state for context.'), { code: 'not_to_act' })
     }
 
     const filePath = path.join(getBridgeDir(), 'current-turn.json')
     if (!fs.existsSync(filePath)) {
-      throw Object.assign(new Error('No private Uplift turn file is available. Run game:state while Uplift is to act.'), { code: 'not_to_act' })
+      throw Object.assign(new Error('No private Codexxyyy turn file is available. Run game:state while Codexxyyy is to act.'), { code: 'not_to_act' })
     }
 
     const packet = JSON.parse(fs.readFileSync(filePath, 'utf8')) as CurrentTurnPacket
@@ -38,7 +38,7 @@ getApi('/api/state')
         seat: 'uplift',
         action: recommendation.action,
         amount: recommendation.amount,
-        publicInfo: 'Uplift action was selected from private turn context; only this submitted action is safe for table talk.'
+        publicInfo: 'Codexxyyy action was selected from private turn context; only this submitted action is safe for table talk.'
       }
     }, null, 2))
   })

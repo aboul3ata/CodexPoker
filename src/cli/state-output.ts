@@ -10,8 +10,8 @@ export function buildSafeStateOutput(state: GameSnapshot) {
   return {
     ok: true,
     protocol: {
-      tableTalk: 'Use this Codex chat for Uplift table talk and hand-review back-and-forth; the preview is only the poker table.',
-      privateInfo: 'Uplift private cards stay in the private turn file and must not be revealed before showdown.'
+      tableTalk: 'Use this Codex chat for Codexxyyy table talk and hand-review back-and-forth; the preview is only the poker table.',
+      privateInfo: 'Codexxyyy private cards stay in the private turn file and must not be revealed before showdown.'
     },
     summary: describeCodexNextStep(state),
     codexChat: buildCodexChatGuide(state),
@@ -58,7 +58,7 @@ function buildPrivateTurnReference(turn: { filePath: string; packet: CurrentTurn
     street: turn.packet.street,
     actionSeq: turn.packet.actionSeq,
     filePath: turn.filePath,
-    privateInfo: 'Read this file only for Uplift action selection. Never quote, summarize, or hint at the private cards in chat.'
+    privateInfo: 'Read this file only for Codexxyyy action selection. Never quote, summarize, or hint at the private cards in chat.'
   }
 }
 
@@ -66,7 +66,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
   if (state.phase === 'hand-complete') {
     return {
       mode: 'review-offer',
-      speakAs: 'Uplift',
+      speakAs: 'Codexxyyy',
       publicTableStory: buildPublicTableStory(state),
       visibleLineup: buildVisibleLineup(state),
       suggestedTableLine: buildSuggestedTableLine(state),
@@ -82,14 +82,14 @@ function buildCodexChatGuide(state: GameSnapshot) {
   if (state.actingSeatId === 'uplift') {
     return {
       mode: 'uplift-to-act',
-      speakAs: 'Uplift',
+      speakAs: 'Codexxyyy',
       publicTableStory: buildPublicTableStory(state),
       visibleLineup: buildVisibleLineup(state),
       suggestedTableLine: buildSuggestedTableLine(state),
-      tableTalkCue: 'Banter here as Uplift using only public board/action context, then submit the move with game:loop.',
+      tableTalkCue: 'Banter here as Codexxyyy using only public board/action context, then submit the move with game:loop.',
       privateGuardrails: [
-        'You may read the private turn file for Uplift action selection only.',
-        'Never reveal, summarize, or hint at exact Uplift hole cards before showdown.',
+        'You may read the private turn file for Codexxyyy action selection only.',
+        'Never reveal, summarize, or hint at exact Codexxyyy hole cards before showdown.',
         'Do not move for Ali; only submit an action for --seat uplift.',
         'Run npm run --silent game:loop to submit the private recommendation, or game:turn only if you need to inspect privately.'
       ]
@@ -99,7 +99,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
   if (state.actingSeatId === 'user') {
     return {
       mode: 'ali-to-act',
-      speakAs: 'Uplift',
+      speakAs: 'Codexxyyy',
       publicTableStory: buildPublicTableStory(state),
       visibleLineup: buildVisibleLineup(state),
       suggestedTableLine: buildSuggestedTableLine(state),
@@ -107,18 +107,18 @@ function buildCodexChatGuide(state: GameSnapshot) {
       privateGuardrails: [
         'Do not infer or ask to see Ali hole cards beyond what the preview shows to the user.',
         'Do not use fallback or bot endpoints as normal play.',
-        'After Ali acts, run npm run --silent game:loop before deciding whether Uplift or Ali is next.'
+        'After Ali acts, run npm run --silent game:loop before deciding whether Codexxyyy or Ali is next.'
       ]
     }
   }
 
   return {
     mode: 'bots-moving',
-    speakAs: 'Uplift',
+    speakAs: 'Codexxyyy',
     publicTableStory: buildPublicTableStory(state),
     visibleLineup: buildVisibleLineup(state),
     suggestedTableLine: buildSuggestedTableLine(state),
-    tableTalkCue: 'Local bots are resolving the table state; run game:loop to stop at the next user, Uplift, or review point.',
+    tableTalkCue: 'Local bots are resolving the table state; run game:loop to stop at the next user, Codexxyyy, or review point.',
     privateGuardrails: [
       'Refresh with npm run --silent game:loop before speaking as if a new decision is available.'
     ]
@@ -127,7 +127,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
 
 function buildSuggestedTableLine(state: GameSnapshot) {
   if (state.phase === 'hand-complete') {
-    return 'Hand complete. Want the quick Uplift review, or should we shuffle the next one?'
+    return 'Hand complete. Want the quick Codexxyyy review, or should we shuffle the next one?'
   }
 
   const lastAction = state.publicActions.at(-1)
@@ -136,7 +136,7 @@ function buildSuggestedTableLine(state: GameSnapshot) {
   }
 
   if (state.actingSeatId === 'uplift') {
-    return `Give one short table line from public context only, then run game:loop for Uplift's action. ${buildPublicTableStory(state)}`
+    return `Give one short table line from public context only, then run game:loop for Codexxyyy's action. ${buildPublicTableStory(state)}`
   }
 
   if (state.actingSeatId === 'user') {

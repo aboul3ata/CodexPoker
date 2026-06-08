@@ -68,14 +68,14 @@ function advanceToUplift() {
 }
 
 describe('game:turn CLI', () => {
-  it('refuses to expose private context when Uplift is not to act', async () => {
+  it('refuses to expose private context when Codexxyyy is not to act', async () => {
     await expect(runGameTurn()).rejects.toMatchObject({
       code: 5,
-      stderr: expect.stringContaining('Uplift is not to act')
+      stderr: expect.stringContaining('Codexxyyy is not to act')
     })
   })
 
-  it('prints a validated private decision packet only for the active Uplift turn', async () => {
+  it('prints a validated private decision packet only for the active Codexxyyy turn', async () => {
     const state = advanceToUplift()
     const result = await runGameTurn()
     const output = JSON.parse(result.stdout) as {

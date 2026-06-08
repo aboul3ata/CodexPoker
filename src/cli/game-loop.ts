@@ -41,7 +41,7 @@ getApi('/api/state')
         await getApi('/api/state')
       }
       if (!fs.existsSync(filePath)) {
-        throw Object.assign(new Error('No private Uplift turn file is available. Run game:state while Uplift is to act.'), { code: 'not_to_act' })
+        throw Object.assign(new Error('No private Codexxyyy turn file is available. Run game:state while Codexxyyy is to act.'), { code: 'not_to_act' })
       }
 
       const packet = JSON.parse(fs.readFileSync(filePath, 'utf8')) as CurrentTurnPacket
@@ -59,7 +59,7 @@ getApi('/api/state')
         kind: 'uplift-action',
         action: recommendation.action,
         amount: recommendation.amount,
-        publicInfo: 'Uplift acted from private turn context; no hidden cards are included in this output.'
+        publicInfo: 'Codexxyyy acted from private turn context; no hidden cards are included in this output.'
       })
     }
 
@@ -69,7 +69,7 @@ getApi('/api/state')
         status: loopStatus(state),
         steps,
         next: loopNext(state),
-        publicInfo: 'Run game:loop after each Ali message or preview action. It will act only for Uplift or fast-forward after Ali folds.'
+        publicInfo: 'Run game:loop after each Ali message or preview action. It will act only for Codexxyyy or fast-forward after Ali folds.'
       }
     }, null, 2))
   })
@@ -105,6 +105,6 @@ function loopStatus(state: GameSnapshot) {
 function loopNext(state: GameSnapshot) {
   if (state.phase === 'hand-complete') return 'Ask Ali whether they want the review or the next hand.'
   if (state.actingSeatId === 'user') return 'Ali should act in the preview.'
-  if (state.actingSeatId === 'uplift') return 'Run npm run --silent game:loop again to submit Uplift safely.'
+  if (state.actingSeatId === 'uplift') return 'Run npm run --silent game:loop again to submit Codexxyyy safely.'
   return 'Run npm run --silent game:loop again after the table updates.'
 }

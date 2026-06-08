@@ -37,7 +37,7 @@ export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'p
 
 export function describeCodexNextStep(state: Pick<GameSnapshot, 'actingSeatId' | 'phase' | 'bridgeStatus'>) {
   if (state.phase === 'hand-complete') return 'Hand complete. Ask Ali in this Codex chat whether they want a review or the next hand.'
-  if (state.actingSeatId === 'uplift') return 'Uplift is waiting for Codex to act.'
+  if (state.actingSeatId === 'uplift') return 'Codexxyyy is waiting for this Codex chat to act.'
   if (state.actingSeatId === 'user') return 'Ali is to act in the preview.'
   if (state.bridgeStatus === 'local-bots-moving') return 'Local bots are moving.'
   return 'The table is between actions.'

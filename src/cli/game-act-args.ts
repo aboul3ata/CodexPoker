@@ -14,12 +14,12 @@ export function parseGameActArgs(args: Record<string, string | boolean>): ParseR
   let amount: number | undefined
 
   if (seat !== 'uplift') {
-    return { ok: false, message: 'game:act is only for Uplift. Ali acts from the preview controls.' }
+    return { ok: false, message: 'game:act is only for Codexxyyy. Ali acts from the preview controls.' }
   }
 
   const legalAction = actionKinds.find((kind) => kind === action)
   if (!legalAction || !turnToken) {
-    return { ok: false, message: 'Missing or invalid Uplift action command.' }
+    return { ok: false, message: 'Missing or invalid Codexxyyy action command.' }
   }
 
   if (rawAmount !== undefined) {

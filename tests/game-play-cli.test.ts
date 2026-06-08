@@ -68,14 +68,14 @@ function advanceToUplift() {
 }
 
 describe('game:play CLI', () => {
-  it('refuses when Uplift is not to act', async () => {
+  it('refuses when Codexxyyy is not to act', async () => {
     await expect(runGamePlay()).rejects.toMatchObject({
       code: 5,
-      stderr: expect.stringContaining('Uplift is not to act')
+      stderr: expect.stringContaining('Codexxyyy is not to act')
     })
   })
 
-  it('submits Uplift private recommended action and returns safe state output', async () => {
+  it('submits Codexxyyy private recommended action and returns safe state output', async () => {
     const before = advanceToUplift()
     const result = await runGamePlay()
     const output = JSON.parse(result.stdout) as {

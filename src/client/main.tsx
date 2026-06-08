@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { Bot, ChevronRight, MessageCircle, RotateCcw, Sparkles, UserRound, UsersRound, X, Zap } from 'lucide-react'
 import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, PublicAction, ReviewSnapshot, SeatId, SeatView } from '../shared/contracts'
@@ -42,6 +42,7 @@ function App() {
   const isUserTurn = state?.actingSeatId === 'user'
   const isUpliftTurn = state?.actingSeatId === 'uplift'
   const canFastForward = Boolean(userSeat?.isFolded && state?.phase === 'playing')
+  const playback = useActionPlayback(state, preferences.reducedMotion)
 
   async function post(path: string, body?: unknown) {
     setError(null)
@@ -82,6 +83,8 @@ function App() {
       </main>
     )
   }
+
+  if (!playback) return null
 
   const shellClass = [
     'app-shell',
@@ -130,12 +133,13 @@ function App() {
         <section className="table-column" aria-label="Poker table">
           {error ? <div className="error-banner" role="alert">{error}</div> : null}
           {state.tableNotice ? <div className="table-notice">{state.tableNotice}</div> : null}
-          <PokerTable state={state} />
+          <PokerTable state={playback.visibleState} />
           <ActionFooter
             state={state}
             isUserTurn={isUserTurn}
             isUpliftTurn={isUpliftTurn}
             canFastForward={canFastForward}
+            isCatchingUp={playback.isCatchingUp}
             onAction={submitAction}
             onFastForward={() => post('/api/fast-forward')}
             onNextHand={() => post('/api/new-hand')}
@@ -145,10 +149,66 @@ function App() {
       </section>
 
       <div className="sr-live" aria-live="polite">
-        {state.actingSeatId ? `${seatName(state, state.actingSeatId)} to act` : 'Hand complete'}
+        {playback.isCatchingUp ? 'Following table action' : state.actingSeatId ? `${seatName(state, state.actingSeatId)} to act` : 'Hand complete'}
       </div>
     </main>
   )
+}
+
+function useActionPlayback(state: GameSnapshot | null, reducedMotion: boolean) {
+  const latestSeq = state?.publicActions.at(-1)?.seq ?? 0
+  const [visibleSeq, setVisibleSeq] = useState(latestSeq)
+  const handRef = useRef<string | null>(state?.handId ?? null)
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (!state) return
+
+    if (!initialized.current) {
+      initialized.current = true
+      handRef.current = state.handId
+      setVisibleSeq(latestSeq)
+      return
+    }
+
+    if (handRef.current !== state.handId) {
+      handRef.current = state.handId
+      setVisibleSeq(reducedMotion ? latestSeq : 0)
+      return
+    }
+
+    if (reducedMotion || visibleSeq > latestSeq) {
+      setVisibleSeq(latestSeq)
+      return
+    }
+
+    if (visibleSeq >= latestSeq) return
+
+    const nextAction = state.publicActions.find((action) => action.seq > visibleSeq)
+    const timeout = window.setTimeout(() => {
+      setVisibleSeq(nextAction?.seq ?? latestSeq)
+    }, playbackDelay(nextAction))
+
+    return () => window.clearTimeout(timeout)
+  }, [state, latestSeq, reducedMotion, visibleSeq])
+
+  if (!state) return null
+
+  const visibleActions = state.publicActions.filter((action) => action.seq <= visibleSeq)
+  return {
+    visibleState: {
+      ...state,
+      publicActions: visibleActions
+    },
+    isCatchingUp: visibleSeq < latestSeq
+  }
+}
+
+function playbackDelay(action: PublicAction | undefined) {
+  if (!action) return 2400
+  const kind = seatKindFor(action.seatId)
+  if (kind === 'human') return 1400
+  return 2200 + (action.seq % 4) * 650
 }
 
 async function fetchState(): Promise<GameSnapshot> {
@@ -243,14 +303,21 @@ function PokerTable({ state }: { state: GameSnapshot }) {
           <div className="street-label">{state.street}</div>
           <div className="pot">
             <img src="/assets/generated/chip.svg" alt="" />
-            <span>{formatChips(state.pot)}</span>
+            <span key={state.pot}>{formatChips(state.pot)}</span>
           </div>
           <LatestActionBurst state={state} />
           <ActionRail state={state} />
           <div className="community-cards" aria-label="Community cards">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <PlayingCard card={state.board[index]} key={index} muted={!state.board[index]} />
-            ))}
+            {Array.from({ length: 5 }).map((_, index) => {
+              const card = state.board[index]
+              return (
+                <PlayingCard
+                  card={card}
+                  key={card ? `${state.handId}-${index}-${card.rank}-${card.suit}` : `${state.handId}-empty-${index}`}
+                  muted={!card}
+                />
+              )
+            })}
           </div>
         </div>
         <div className="hero-hand" aria-label="Your hole cards">
@@ -279,7 +346,7 @@ function Seat({ seat, index }: { seat: SeatView; index: number }) {
       </div>
       <small>{formatChips(seat.stack)}</small>
       {seat.isButton ? <span className="dealer-chip" aria-label={`${seat.name} dealer button`}>D</span> : null}
-      {seat.bet > 0 ? <em>{formatChips(seat.bet)}</em> : null}
+      {seat.bet > 0 ? <em className="wager-chip" key={`${seat.seatId}-${seat.bet}`}>{formatChips(seat.bet)}</em> : null}
       {seat.revealedCards?.length ? (
         <div className="seat-cards" aria-label={`${seat.name} revealed cards`}>
           {seat.revealedCards.map((card, cardIndex) => (
@@ -329,8 +396,35 @@ function PlayingCard({ card, muted, large }: { card?: Card; muted?: boolean; lar
 
 function LatestActionBurst({ state }: { state: GameSnapshot }) {
   const lastAction = state.publicActions.at(-1)
+  const botRun = getRecentBotRun(state.publicActions)
+  const isBotSweep = botRun.length > 1
   const actor = lastAction ? state.seats.find((seat) => seat.seatId === lastAction.seatId) : undefined
   const kind = actor?.kind ?? 'codex'
+
+  if (lastAction && isBotSweep) {
+    return (
+      <section
+        aria-live="polite"
+        className="latest-action-burst bot bot-sweep"
+        key={botRun.map((action) => action.seq).join('-')}
+      >
+        <div className="burst-avatar-stack" aria-hidden="true">
+          {botRun.slice(0, 4).map((action) => (
+            <div className="burst-avatar" key={action.seq}>
+              <img src={avatarBySeat[action.seatId]} alt="" />
+              <span className="seat-kind-badge bot" aria-hidden="true">
+                <SeatKindIcon kind="bot" />
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="burst-copy">
+          <span>{lastAction.street} bot sweep</span>
+          <strong>{formatBotRun(botRun)}</strong>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section
@@ -350,6 +444,23 @@ function LatestActionBurst({ state }: { state: GameSnapshot }) {
       </div>
     </section>
   )
+}
+
+function getRecentBotRun(actions: PublicAction[]) {
+  const lastAction = actions.at(-1)
+  if (!lastAction || seatKindFor(lastAction.seatId) !== 'bot') return []
+
+  const run: PublicAction[] = []
+  for (let index = actions.length - 1; index >= 0; index -= 1) {
+    const action = actions[index]
+    if (action.street !== lastAction.street || seatKindFor(action.seatId) !== 'bot') break
+    run.unshift(action)
+  }
+  return run
+}
+
+function formatBotRun(actions: PublicAction[]) {
+  return actions.map(formatActionLine).join(' · ')
 }
 
 function ActionRail({ state }: { state: GameSnapshot }) {
@@ -398,6 +509,7 @@ function ActionFooter({
   isUserTurn,
   isUpliftTurn,
   canFastForward,
+  isCatchingUp,
   onAction,
   onFastForward,
   onNextHand
@@ -406,6 +518,7 @@ function ActionFooter({
   isUserTurn: boolean
   isUpliftTurn: boolean
   canFastForward: boolean
+  isCatchingUp: boolean
   onAction: (action: LegalAction, amount?: number) => void
   onFastForward: () => void
   onNextHand: () => void
@@ -422,12 +535,17 @@ function ActionFooter({
 
   return (
     <footer className="action-footer">
-      {isUserTurn ? (
+      {isUserTurn && !isCatchingUp ? (
         <UserActionPanel state={state} onAction={onAction} />
       ) : canFastForward ? (
         <button className="primary-action" onClick={() => onFastForward()} type="button">
           <RotateCcw size={18} /> Simulate to result
         </button>
+      ) : isCatchingUp ? (
+        <div className="waiting-copy action-playback-wait">
+          <Sparkles size={18} />
+          Following table action...
+        </div>
       ) : isUpliftTurn ? (
         <UpliftBridgePrompt state={state} />
       ) : (
@@ -447,8 +565,8 @@ function UpliftBridgePrompt({ state }: { state: GameSnapshot }) {
         <img src={avatarBySeat.uplift} alt="" />
       </div>
       <div className="codex-turn-copy">
-        <span>Uplift turn</span>
-        <strong>Codex should act now.</strong>
+        <span>Codexxyyy turn</span>
+        <strong>Codexxyyy should act now.</strong>
         <p>{buildUpliftBridgeLine(state)}</p>
       </div>
       <div className="codex-command-stack" aria-label="Codex turn commands">
@@ -549,7 +667,7 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
     <aside className={`review-panel ${review ? 'active' : ''}`} aria-label="Hand review">
       <div className="lane-title">
         <Sparkles size={18} />
-        <span>Uplift review</span>
+        <span>Codexxyyy review</span>
       </div>
       {review ? (
         <>
@@ -574,7 +692,7 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
       ) : (
         <>
           <h2>One lesson after each hand.</h2>
-          <p>Uplift reviews decisions from what was visible at the time, then gets out of your way.</p>
+          <p>Codexxyyy reviews decisions from what was visible at the time, then gets out of your way.</p>
           <div className="mini-goal">{state.tendencySummary}</div>
         </>
       )}
@@ -591,7 +709,7 @@ function CodexReviewPrompt() {
       </div>
       <div className="review-loop-copy">
         <span>Chat review</span>
-        <strong>Ask from Codex.</strong>
+        <strong>Ask Codexxyyy here.</strong>
         <p>Use the loop guide here, then choose review or next hand.</p>
       </div>
       <code>npm run --silent game:codex</code>
@@ -605,7 +723,7 @@ function ReviewMoment({ review }: { review: ReviewSnapshot }) {
   const line = review.winningSeatIds.includes('user')
     ? 'You found the line'
     : review.winningSeatIds.includes('uplift')
-      ? 'Uplift got there'
+      ? 'Codexxyyy got there'
       : 'Table result'
 
   return (
@@ -740,8 +858,8 @@ function buildAmountPresets(action: LegalAction, pot: number) {
 
 function buildUpliftBridgeLine(state: GameSnapshot) {
   const lastAction = state.publicActions.at(-1)
-  if (!lastAction) return 'The preview stays table-only; Uplift keeps private cards inside the bridge.'
-  return `${lastAction.name} ${formatActionKind(lastAction.action)}${lastAction.amount ? ` ${formatChips(lastAction.amount)}` : ''}. Uplift replies here with public table talk only.`
+  if (!lastAction) return 'The preview stays table-only; Codexxyyy keeps private cards inside the bridge.'
+  return `${lastAction.name} ${formatActionKind(lastAction.action)}${lastAction.amount ? ` ${formatChips(lastAction.amount)}` : ''}. Codexxyyy replies here with public table talk only.`
 }
 
 function clampAmount(value: number, min: number, max: number) {
@@ -776,7 +894,7 @@ function suitSymbol(suit: Card['suit']) {
 
 function bridgeLabel(status: GameSnapshot['bridgeStatus']) {
   return {
-    'waiting-for-codex': 'Codex to act',
+    'waiting-for-codex': 'Codexxyyy to act',
     'local-bots-moving': 'Bots moving',
     'user-to-act': 'Your turn',
     'hand-complete': 'Review ready'

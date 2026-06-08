@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { gameActUsage, parseGameActArgs } from '../src/cli/game-act-args'
 
 describe('game:act argument parsing', () => {
-  it('accepts valid Uplift actions for the Codex bridge', () => {
+  it('accepts valid Codexxyyy actions for the Codex bridge', () => {
     const parsed = parseGameActArgs({
       seat: 'uplift',
       'turn-token': 'hand_1.2.uplift.token',
@@ -30,7 +30,7 @@ describe('game:act argument parsing', () => {
 
     expect(parsed).toEqual({
       ok: false,
-      message: 'game:act is only for Uplift. Ali acts from the preview controls.'
+      message: 'game:act is only for Codexxyyy. Ali acts from the preview controls.'
     })
     expect(gameActUsage).toContain('--seat uplift')
   })

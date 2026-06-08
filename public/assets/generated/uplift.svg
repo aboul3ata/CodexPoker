@@ -1,10 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
-  <title id="title">Uplift avatar</title>
+  <title id="title">Codexxyyy avatar</title>
   <rect width="160" height="160" rx="36" fill="#206dff"/>
-  <circle cx="80" cy="72" r="48" fill="#fffef1"/>
-  <circle cx="62" cy="69" r="8" fill="#17323b"/>
-  <circle cx="98" cy="69" r="8" fill="#17323b"/>
-  <path d="M58 96c12 13 31 13 44 0" fill="none" stroke="#17323b" stroke-width="8" stroke-linecap="round"/>
-  <path d="M48 35c18-18 47-20 67 0" fill="none" stroke="#f9d84a" stroke-width="12" stroke-linecap="round"/>
-  <circle cx="121" cy="39" r="12" fill="#f25f5c"/>
+  <path d="M80 24v18" stroke="#fffef1" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="80" cy="22" r="10" fill="#f9d84a" stroke="#17323b" stroke-width="5"/>
+  <rect x="35" y="42" width="90" height="82" rx="26" fill="#fffef1" stroke="#17323b" stroke-width="6"/>
+  <rect x="49" y="57" width="62" height="38" rx="14" fill="#17323b"/>
+  <circle cx="67" cy="76" r="6" fill="#39c7a0"/>
+  <circle cx="93" cy="76" r="6" fill="#39c7a0"/>
+  <path d="M66 106h28" stroke="#17323b" stroke-width="7" stroke-linecap="round"/>
+  <path d="M43 76h-11M128 76h-11" stroke="#17323b" stroke-width="8" stroke-linecap="round"/>
+  <path d="M57 37l-13-15M103 37l13-15" stroke="#fffef1" stroke-width="7" stroke-linecap="round"/>
+  <path d="M58 132h44" stroke="#f9d84a" stroke-width="10" stroke-linecap="round"/>
+  <text x="80" y="86" text-anchor="middle" font-family="Avenir Next, Arial, sans-serif" font-size="15" font-weight="900" fill="#fffef1">&lt;/&gt;</text>
 </svg>

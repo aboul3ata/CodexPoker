@@ -18,7 +18,7 @@ const baseState: GameSnapshot = {
   pot: 600,
   seats: [
     seat('user', 'Ali', true),
-    seat('uplift', 'Uplift', false),
+    seat('uplift', 'Codexxyyy', false),
     seat('pip', 'Pip', false),
     seat('nova', 'Nova', false),
     seat('clio', 'Clio', false),
@@ -26,7 +26,7 @@ const baseState: GameSnapshot = {
   ],
   legalActions: [{ kind: 'fold' }, { kind: 'call', toCall: 100 }],
   publicActions: [
-    { seq: 4, seatId: 'uplift', name: 'Uplift', street: 'flop', action: 'bet', amount: 200, at: '2026-06-08T16:00:00.000Z' }
+    { seq: 4, seatId: 'uplift', name: 'Codexxyyy', street: 'flop', action: 'bet', amount: 200, at: '2026-06-08T16:00:00.000Z' }
   ],
   bankroll: 10000,
   rating: 1000,
@@ -50,7 +50,7 @@ describe('banter copy', () => {
     expect(serialized).not.toContain('private')
   })
 
-  it('keeps Uplift turns public and points back to this chat', () => {
+  it('keeps Codexxyyy turns public and points back to this chat', () => {
     const message = buildBanterMessage({
       ...baseState,
       actingSeatId: 'uplift',

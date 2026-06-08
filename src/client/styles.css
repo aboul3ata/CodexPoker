@@ -510,6 +510,11 @@ input:focus-visible {
   background: #263f48;
 }
 
+.latest-action-burst.bot-sweep {
+  width: min(540px, 100%);
+  grid-template-columns: 88px minmax(0, 1fr);
+}
+
 .latest-action-burst.codex {
   background: #1f5ad1;
 }
@@ -535,6 +540,21 @@ input:focus-visible {
 .burst-avatar img {
   width: 34px;
   height: 34px;
+}
+
+.burst-avatar-stack {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.burst-avatar-stack .burst-avatar {
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 2px rgba(255, 254, 241, .72);
+}
+
+.burst-avatar-stack .burst-avatar + .burst-avatar {
+  margin-left: -16px;
 }
 
 .burst-copy {
@@ -872,6 +892,7 @@ input:focus-visible {
   font-style: normal;
   font-weight: 950;
   font-size: 12px;
+  animation: wager-pop .32s ease-out both;
 }
 
 .seat-cards {
@@ -947,6 +968,11 @@ input:focus-visible {
 .pot img {
   width: 36px;
   height: 36px;
+}
+
+.pot span {
+  display: inline-block;
+  animation: pot-pop .28s ease-out both;
 }
 
 .community-cards,
@@ -1159,6 +1185,14 @@ input:focus-visible {
 
 .waiting-copy svg {
   animation: thinking-pulse 1.4s ease-in-out infinite;
+}
+
+.action-playback-wait {
+  color: var(--ink);
+  background: rgba(249, 216, 74, .2);
+  border: 2px dashed rgba(23, 50, 59, .18);
+  border-radius: 999px;
+  padding: 0 14px;
 }
 
 .codex-turn-card {
@@ -1662,6 +1696,32 @@ input:focus-visible {
   to {
     opacity: 1;
     transform: translateY(0) rotate(10deg) scale(1);
+  }
+}
+
+@keyframes wager-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(.75);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pot-pop {
+  from {
+    opacity: .65;
+    transform: translateY(5px) scale(.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

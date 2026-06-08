@@ -2,7 +2,7 @@ import type { ActionKind, Card, LatestHandPacket, PublicAction, SeatId } from '.
 
 const seatNames: Record<SeatId, string> = {
   user: 'Ali',
-  uplift: 'Uplift',
+  uplift: 'Codexxyyy',
   pip: 'Pip',
   nova: 'Nova',
   clio: 'Clio',

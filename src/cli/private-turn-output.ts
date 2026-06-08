@@ -16,15 +16,15 @@ export function buildPrivateTurnOutput(state: GameSnapshot, packet: CurrentTurnP
     ok: true,
     protocol: {
       destination: 'Private Codex decision context',
-      privateInfo: 'This output contains Uplift holeCards. Use them only to choose an action; never reveal, summarize, or hint at them in chat before showdown.',
+      privateInfo: 'This output contains Codexxyyy holeCards. Use them only to choose an action; never reveal, summarize, or hint at them in chat before showdown.',
       chatBoundary: 'Only the chatSafe section is safe to say in Codex chat before showdown.'
     },
     chatSafe: {
       mode: 'uplift-private-decision',
-      speakAs: 'Uplift',
+      speakAs: 'Codexxyyy',
       publicTableStory: buildPublicTableStory(state),
       suggestedTableLine: buildPrivateDecisionLine(state),
-      afterActionInstruction: 'After submitting an Uplift action, use the returned codexChat.suggestedTableLine for any table talk.',
+      afterActionInstruction: 'After submitting a Codexxyyy action, use the returned codexChat.suggestedTableLine for any table talk.',
       visibleLineup: state.seats.map((seat) => ({
         seatId: seat.seatId,
         name: seat.name,
@@ -54,7 +54,7 @@ export function buildPrivateTurnOutput(state: GameSnapshot, packet: CurrentTurnP
 
 export function validatePrivateTurn(state: GameSnapshot, packet: CurrentTurnPacket) {
   if (state.phase !== 'playing' || state.actingSeatId !== 'uplift') {
-    throw Object.assign(new Error('Uplift is not to act. Use game:state for public table context.'), { code: 'not_to_act' })
+    throw Object.assign(new Error('Codexxyyy is not to act. Use game:state for public table context.'), { code: 'not_to_act' })
   }
   if (packet.seat !== 'uplift' || packet.handId !== state.handId || packet.turnToken !== state.turnToken) {
     throw Object.assign(new Error('The private turn file is stale. Run game:state to refresh the live bridge.'), { code: 'stale_turn' })

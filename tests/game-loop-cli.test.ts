@@ -82,7 +82,7 @@ describe('game:loop CLI', () => {
     expect(after.actionSeq).toBe(before.actionSeq)
   })
 
-  it('submits Uplift and stops at the next Ali or review point without leaking private cards', async () => {
+  it('submits Codexxyyy and stops at the next Ali or review point without leaking private cards', async () => {
     const upliftState = submitUser('call')
     expect(upliftState.actingSeatId).toBe('uplift')
 
@@ -96,7 +96,7 @@ describe('game:loop CLI', () => {
     expect(serialized).not.toContain('"cards"')
   })
 
-  it('fast-forwards to review after Ali folds instead of waiting on Uplift', async () => {
+  it('fast-forwards to review after Ali folds instead of waiting on Codexxyyy', async () => {
     const folded = submitUser('fold')
     expect(folded.seats.find((seat) => seat.seatId === 'user')?.isFolded).toBe(true)
 

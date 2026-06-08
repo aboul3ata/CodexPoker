@@ -13,8 +13,8 @@ getApi('/api/state')
       ok: true,
       protocol: {
         destination: 'Codex chat',
-        purpose: 'Use this as the one-command Codex loop guide for table talk, Uplift turns, and hand reviews.',
-        privateInfo: 'This output is public-safe. It never prints Uplift hole cards, never prints Ali hidden cards, and never submits an action.'
+        purpose: 'Use this as the one-command Codex loop guide for table talk, Codexxyyy turns, and hand reviews.',
+        privateInfo: 'This output is public-safe. It never prints Codexxyyy hole cards, never prints Ali hidden cards, and never submits an action.'
       },
       summary: safeState.summary,
       mode: safeState.codexChat.mode,
@@ -38,7 +38,7 @@ function buildNextInstruction(state: GameSnapshot) {
     return 'Ask Ali whether they want the quick review. If yes, run npm run --silent game:review -- --mode accepted. If not, run npm run --silent game:next.'
   }
   if (state.actingSeatId === 'uplift') {
-    return 'Say the public-safe table line if useful, then run npm run --silent game:loop to submit Uplift from private context and stop at Ali or review.'
+    return 'Say the public-safe table line if useful, then run npm run --silent game:loop to submit Codexxyyy from private context and stop at Ali or review.'
   }
   if (state.actingSeatId === 'user') {
     return 'Say the public-safe table line if useful, then wait for Ali to act in the preview.'

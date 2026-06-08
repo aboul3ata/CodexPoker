@@ -123,7 +123,7 @@ describe('game:codex CLI', () => {
     expect(serialized).not.toContain('"decision"')
   })
 
-  it('routes Uplift turns to game:loop without printing private cards', async () => {
+  it('routes Codexxyyy turns to game:loop without printing private cards', async () => {
     advanceToUplift()
     const output = await runGameCodex()
     const serialized = JSON.stringify(output)
@@ -149,7 +149,7 @@ describe('game:codex CLI', () => {
     const output = await runGameCodex()
 
     expect(output.mode).toBe('review-offer')
-    expect(output.suggestedMessage).toContain('Want the quick Uplift review')
+    expect(output.suggestedMessage).toContain('Want the quick Codexxyyy review')
     expect(output.nextInstruction).toContain('game:review -- --mode accepted')
     expect(output.nextInstruction).toContain('game:next')
     expect(output.suggestedCommands).toEqual({

@@ -15,7 +15,7 @@ const baseState: Pick<GameSnapshot, 'actingSeatId' | 'phase' | 'legalActions' | 
 }
 
 describe('Codex command advice', () => {
-  it('sends Uplift through private turn context instead of public card-blind action advice', () => {
+  it('sends Codexxyyy through private turn context instead of public card-blind action advice', () => {
     const commands = buildCodexCommands(baseState)
 
     expect(commands.loop).toBe('npm run --silent game:loop')
@@ -55,7 +55,7 @@ describe('Codex command advice', () => {
   })
 
   it('summarizes the next table state for Codex', () => {
-    expect(describeCodexNextStep(baseState)).toContain('waiting for Codex')
+    expect(describeCodexNextStep(baseState)).toContain('waiting for this Codex chat')
     expect(describeCodexNextStep({ ...baseState, actingSeatId: 'user', bridgeStatus: 'user-to-act' })).toContain('Ali is to act')
   })
 })

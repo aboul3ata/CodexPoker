@@ -2,7 +2,7 @@ import type { ActionKind, Card, GameSnapshot, PublicAction, SeatId } from './con
 
 const seatNames: Record<SeatId, string> = {
   user: 'Ali',
-  uplift: 'Uplift',
+  uplift: 'Codexxyyy',
   pip: 'Pip',
   nova: 'Nova',
   clio: 'Clio',
@@ -15,7 +15,7 @@ export function buildBanterMessage(state: GameSnapshot) {
   const pot = `${formatChips(state.pot)} in the middle`
 
   if (state.phase === 'hand-complete') {
-    return 'Hand complete. Want the quick Uplift review, or should I shuffle the next one?'
+    return 'Hand complete. Want the quick Codexxyyy review, or should I shuffle the next one?'
   }
 
   if (state.actingSeatId === 'uplift') {
