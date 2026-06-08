@@ -24,7 +24,7 @@ export function buildPrivateTurnOutput(state: GameSnapshot, packet: CurrentTurnP
       speakAs: 'Uplift',
       publicTableStory: buildPublicTableStory(state),
       suggestedTableLine: buildPrivateDecisionLine(state),
-      afterActionInstruction: 'After submitting game:act, use the returned codexChat.suggestedTableLine for any table talk.',
+      afterActionInstruction: 'After submitting an Uplift action, use the returned codexChat.suggestedTableLine for any table talk.',
       visibleLineup: state.seats.map((seat) => ({
         seatId: seat.seatId,
         name: seat.name,

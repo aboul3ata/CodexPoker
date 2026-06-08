@@ -86,7 +86,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
       publicTableStory: buildPublicTableStory(state),
       visibleLineup: buildVisibleLineup(state),
       suggestedTableLine: buildSuggestedTableLine(state),
-      tableTalkCue: 'Banter here as Uplift using only public board/action context, then act with game:act.',
+      tableTalkCue: 'Banter here as Uplift using only public board/action context, then submit the move with game:play.',
       privateGuardrails: [
         'You may read the private turn file for Uplift action selection only.',
         'Never reveal, summarize, or hint at exact Uplift hole cards before showdown.',

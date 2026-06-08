@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { Bot, ChevronRight, RotateCcw, Sparkles, UsersRound, X, Zap } from 'lucide-react'
+import { ChevronRight, RotateCcw, Sparkles, UsersRound, X, Zap } from 'lucide-react'
 import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, PublicAction, ReviewSnapshot, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
@@ -376,12 +376,7 @@ function ActionFooter({
       {isUserTurn ? (
         <UserActionPanel state={state} onAction={onAction} />
       ) : isUpliftTurn ? (
-        <>
-          <div className="waiting-copy">
-            <Bot size={18} />
-            Uplift is thinking.
-          </div>
-        </>
+        <UpliftBridgePrompt state={state} />
       ) : canFastForward ? (
         <button className="primary-action" onClick={() => onFastForward()} type="button">
           <RotateCcw size={18} /> Simulate to result
@@ -393,6 +388,22 @@ function ActionFooter({
         <button className="secondary-action" onClick={() => onFastForward()} type="button">Fast-fold result</button>
       ) : null}
     </footer>
+  )
+}
+
+function UpliftBridgePrompt({ state }: { state: GameSnapshot }) {
+  return (
+    <section className="codex-turn-card" aria-label="Codex chat turn">
+      <div className="codex-turn-avatar">
+        <img src={avatarBySeat.uplift} alt="" />
+      </div>
+      <div className="codex-turn-copy">
+        <span>Uplift turn</span>
+        <strong>Play me from this Codex chat.</strong>
+        <p>{buildUpliftBridgeLine(state)}</p>
+      </div>
+      <code>npm run --silent game:play</code>
+    </section>
   )
 }
 
@@ -641,6 +652,12 @@ function buildAmountPresets(action: LegalAction, pot: number) {
       seen.add(preset.amount)
       return true
     })
+}
+
+function buildUpliftBridgeLine(state: GameSnapshot) {
+  const lastAction = state.publicActions.at(-1)
+  if (!lastAction) return 'The preview stays table-only; Uplift keeps private cards inside the bridge.'
+  return `${lastAction.name} ${formatActionKind(lastAction.action)}${lastAction.amount ? ` ${formatChips(lastAction.amount)}` : ''}. Uplift replies here with public table talk only.`
 }
 
 function clampAmount(value: number, min: number, max: number) {

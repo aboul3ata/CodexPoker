@@ -1004,6 +1004,72 @@ input:focus-visible {
   animation: thinking-pulse 1.4s ease-in-out infinite;
 }
 
+.codex-turn-card {
+  width: min(760px, 100%);
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) minmax(220px, auto);
+  align-items: center;
+  gap: 12px;
+}
+
+.codex-turn-avatar {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--sky-soft);
+  box-shadow: inset 0 -5px 0 rgba(23, 50, 59, .08);
+}
+
+.codex-turn-avatar img {
+  width: 48px;
+  height: 48px;
+  animation: thinking-pulse 1.4s ease-in-out infinite;
+}
+
+.codex-turn-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.codex-turn-copy span {
+  color: var(--sky);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.codex-turn-copy strong {
+  font-family: "Fredoka", "Avenir Next", "Trebuchet MS", sans-serif;
+  font-size: 22px;
+  line-height: 1.05;
+}
+
+.codex-turn-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.codex-turn-card code {
+  justify-self: end;
+  border: 2px solid rgba(32, 109, 255, .2);
+  border-radius: 14px;
+  background: #f5f8ff;
+  color: var(--ink);
+  padding: 10px 12px;
+  font-family: "SFMono-Regular", "Cascadia Mono", "Menlo", monospace;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .review-panel {
   position: relative;
   overflow: hidden;
@@ -1475,6 +1541,32 @@ input:focus-visible {
 
   .action-footer {
     bottom: 8px;
+  }
+
+  .codex-turn-card {
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .codex-turn-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .codex-turn-avatar img {
+    width: 42px;
+    height: 42px;
+  }
+
+  .codex-turn-copy strong {
+    font-size: 19px;
+  }
+
+  .codex-turn-card code {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .bet-panel {

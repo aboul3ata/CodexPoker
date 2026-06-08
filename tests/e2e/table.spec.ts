@@ -56,6 +56,34 @@ test('supports a legal user action from the preview', async ({ page, request }) 
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
 })
 
+test('routes Uplift turns to this Codex chat instead of preview controls', async ({ page, request }) => {
+  await page.goto('/')
+  let state = (await (await request.post('/api/new-hand')).json()).state
+
+  for (let guard = 0; state.actingSeatId !== 'uplift' && guard < 6; guard += 1) {
+    expect(state.actingSeatId).toBe('user')
+    const action = state.legalActions.find((item: { kind: string }) => item.kind === 'check' || item.kind === 'call') ?? state.legalActions[0]
+    state = (await (await request.post('/api/action', {
+      data: {
+        seat: 'user',
+        turnToken: state.turnToken,
+        action: action.kind,
+        amount: action.kind === 'bet' || action.kind === 'raise' ? action.min : undefined
+      }
+    })).json()).state
+  }
+
+  expect(state.actingSeatId).toBe('uplift')
+  await page.reload()
+
+  const codexTurn = page.getByRole('region', { name: 'Codex chat turn' })
+  await expect(codexTurn).toBeVisible()
+  await expect(codexTurn.getByText('Play me from this Codex chat.')).toBeVisible()
+  await expect(codexTurn.getByText('npm run --silent game:play')).toBeVisible()
+  await expect(page.getByText('Uplift is thinking.')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
+})
+
 test('lets the user size a bet or raise from the preview', async ({ page, request }) => {
   await page.goto('/')
   let state = (await (await request.post('/api/new-hand')).json()).state

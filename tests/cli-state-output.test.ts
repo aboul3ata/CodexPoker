@@ -182,6 +182,7 @@ describe('safe CLI state output', () => {
 
     expect(output.codexChat.mode).toBe('uplift-to-act')
     expect(output.codexChat.tableTalkCue).toContain('Banter here as Uplift')
+    expect(output.codexChat.tableTalkCue).toContain('game:play')
     expect(output.codexChat.suggestedTableLine).toContain('public context only')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('private turn file')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('game:turn')
