@@ -99,6 +99,7 @@ function App() {
         <ChatLane state={state} draft={chatDraft} setDraft={setChatDraft} onSend={sendChat} />
         <section className="table-column" aria-label="Poker table">
           {error ? <div className="error-banner" role="alert">{error}</div> : null}
+          {state.tableNotice ? <div className="table-notice">{state.tableNotice}</div> : null}
           <PokerTable state={state} />
           <ActionFooter
             state={state}
@@ -149,8 +150,9 @@ function ChatLane({
 }) {
   const codexCommand = useMemo(() => {
     if (state.actingSeatId !== 'uplift') return null
-    const action = state.legalActions[0]?.kind ?? 'fold'
-    return `npm run game:act -- --seat uplift --turn-token ${state.turnToken} --action ${action}`
+    const action = chooseCodexAction(state.legalActions)
+    const amountArg = action.amount ? ` --amount ${action.amount}` : ''
+    return `npm run --silent game:act -- --seat uplift --turn-token ${state.turnToken} --action ${action.kind}${amountArg}`
   }, [state])
 
   return (
@@ -171,6 +173,7 @@ function ChatLane({
         <div className="codex-card">
           <span>Codex turn packet is ready</span>
           <code>{codexCommand}</code>
+          <code>{`npm run --silent game:say -- --seat uplift --turn-token ${state.turnToken} --message "I am studying your betting story."`}</code>
         </div>
       ) : null}
       <form onSubmit={onSend} className="chat-form">
@@ -371,6 +374,17 @@ function bridgeLabel(status: GameSnapshot['bridgeStatus']) {
     'user-to-act': 'Your turn',
     'hand-complete': 'Review ready'
   }[status]
+}
+
+function chooseCodexAction(actions: LegalAction[]): { kind: ActionKind; amount?: number } {
+  const check = actions.find((action) => action.kind === 'check')
+  if (check) return { kind: 'check' }
+  const call = actions.find((action) => action.kind === 'call')
+  if (call && (call.toCall ?? 0) <= 200) return { kind: 'call' }
+  const raise = actions.find((action) => action.kind === 'raise')
+  if (raise && raise.min && raise.min <= 300) return { kind: 'raise', amount: raise.min }
+  const fold = actions.find((action) => action.kind === 'fold')
+  return { kind: fold?.kind ?? actions[0]?.kind ?? 'fold' }
 }
 
 function seatName(state: GameSnapshot, seatId: SeatId) {

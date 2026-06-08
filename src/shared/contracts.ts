@@ -86,6 +86,7 @@ export type GameSnapshot = {
   rating: number
   tendencySummary: string
   sessionGoal: string
+  tableNotice?: string
   bridgeStatus: 'waiting-for-codex' | 'local-bots-moving' | 'user-to-act' | 'hand-complete'
   review?: ReviewSnapshot
 }

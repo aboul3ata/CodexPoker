@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: './tests/e2e',
   timeout: 30000,
   fullyParallel: false,
+  // The preview app has one local game session, so mutating e2e tests must not share it concurrently.
+  workers: 1,
   use: {
     baseURL: 'http://127.0.0.1:5173',
     trace: 'on-first-retry'

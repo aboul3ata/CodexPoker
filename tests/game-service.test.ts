@@ -59,6 +59,25 @@ describe('GameService', () => {
     expect(JSON.stringify(packet)).not.toContain('"seed"')
   })
 
+  it('clears the current-turn packet after Uplift acts', () => {
+    let state = service.getSnapshot()
+    state = userAction(state)
+    expect(state.actingSeatId).toBe('uplift')
+    expect(fs.existsSync('data/bridge/current-turn.json')).toBe(true)
+
+    const action = state.legalActions.find((item) => item.kind === 'check') ?? state.legalActions[0]
+    state = service.submitAction({
+      seat: 'uplift',
+      turnToken: state.turnToken,
+      action: action.kind,
+      amount: action.kind === 'bet' || action.kind === 'raise' ? action.min : undefined
+    })
+
+    if (state.actingSeatId !== 'uplift') {
+      expect(fs.existsSync('data/bridge/current-turn.json')).toBe(false)
+    }
+  })
+
   it('rejects stale Codex actions without mutating the active turn', () => {
     let state = service.getSnapshot()
     state = userAction(state)
@@ -84,5 +103,31 @@ describe('GameService', () => {
     expect(state.bankroll).toBeGreaterThan(0)
     expect(state.review?.publicActions.some((action) => action.seatId === 'user' && action.action === 'fold')).toBe(true)
     expect(fs.existsSync('data/bridge/latest-hand.json')).toBe(true)
+  })
+
+  it('plays repeated hands without losing table-chip conservation or hanging', () => {
+    for (let hand = 0; hand < 10; hand += 1) {
+      let state = service.getSnapshot()
+      let guard = 0
+      while (state.phase !== 'hand-complete' && guard < 200) {
+        guard += 1
+        if (state.actingSeatId === 'user') {
+          const preferred = state.legalActions.some((action) => action.kind === 'check') ? 'check' : 'call'
+          state = userAction(state, preferred)
+        } else if (state.actingSeatId === 'uplift') {
+          state = service.useUpliftFallback()
+        } else {
+          throw new Error(`Unexpected acting seat: ${state.actingSeatId}`)
+        }
+      }
+
+      expect(guard).toBeLessThan(200)
+      expect(state.phase).toBe('hand-complete')
+      const totalStacks = state.seats.reduce((sum, seat) => sum + seat.stack, 0)
+      expect(totalStacks).toBe(60000)
+      const vpip = Number(state.tendencySummary.match(/VPIP-ish (\\d+)%/)?.[1] ?? 0)
+      expect(vpip).toBeLessThanOrEqual(100)
+      state = service.startNewHand()
+    }
   })
 })

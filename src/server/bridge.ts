@@ -14,6 +14,11 @@ export function writeCurrentTurn(packet: CurrentTurnPacket) {
   writeJsonAtomic(path.join(bridgeDir, 'current-turn.json'), packet)
 }
 
+export function clearCurrentTurn() {
+  const filePath = path.join(bridgeDir, 'current-turn.json')
+  if (fs.existsSync(filePath)) fs.rmSync(filePath)
+}
+
 export function writeLatestHand(packet: LatestHandPacket) {
   writeJsonAtomic(path.join(bridgeDir, 'latest-hand.json'), packet)
 }

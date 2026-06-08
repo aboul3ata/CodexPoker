@@ -16,8 +16,8 @@ import type {
   SeatView,
   Street
 } from '../shared/contracts'
-import { clearLastError, writeCurrentTurn, writeLatestHand } from './bridge'
-import { InvalidActionError, NotToActError, StaleTurnError, WrongSeatError } from './errors'
+import { clearCurrentTurn, clearLastError, writeCurrentTurn, writeLatestHand } from './bridge'
+import { InvalidActionError, NotToActError, StaleTurnError } from './errors'
 import { Storage, type PlayerProfile } from './storage'
 
 type PokerTable = InstanceType<typeof PokerTableConstructor>
@@ -46,6 +46,9 @@ const rankingNames = [
   'Royal flush'
 ]
 
+const initialStack = 10000
+const tableRefillThreshold = 1000
+
 export class GameService {
   private table!: PokerTable
   private profile: PlayerProfile
@@ -58,17 +61,21 @@ export class GameService {
   private review: ReviewSnapshot | undefined
   private handStartStacks: Record<SeatId, number>
   private seatStacks: Record<SeatId, number>
+  private tableNotice: string | undefined
+  private userVpipThisHand = false
+  private userPfrThisHand = false
+  private userFoldedThisHand = false
   private listeners = new Set<(snapshot: GameSnapshot) => void>()
 
   constructor(private storage = new Storage()) {
     this.profile = this.storage.getProfile()
     this.seatStacks = {
       user: this.profile.bankroll,
-      uplift: 10000,
-      pip: 10000,
-      nova: 10000,
-      clio: 10000,
-      atlas: 10000
+      uplift: initialStack,
+      pip: initialStack,
+      nova: initialStack,
+      clio: initialStack,
+      atlas: initialStack
     }
     this.handStartStacks = { ...this.seatStacks }
     this.startNewHand()
@@ -105,6 +112,7 @@ export class GameService {
       rating: this.profile.rating,
       tendencySummary: this.getTendencySummary(),
       sessionGoal: 'Win two pots or catch one good fold',
+      tableNotice: this.tableNotice,
       bridgeStatus: this.getBridgeStatus(actingSeatId, isComplete),
       review: this.review
     }
@@ -179,20 +187,24 @@ export class GameService {
     this.publicActions = []
     this.handId = `hand_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     this.actionSeq = 0
+    this.userVpipThisHand = false
+    this.userPfrThisHand = false
+    this.userFoldedThisHand = false
+    this.tableNotice = this.ensurePlayableStacks()
     this.chat = [
       {
         id: randomUUID(),
         seatId: 'uplift',
         name: 'Uplift',
-        message: 'New hand. I promise not to peek at your cards.',
+        message: this.tableNotice ?? 'New hand. I promise not to peek at your cards.',
         at: new Date().toISOString(),
-        tone: 'banter'
+        tone: this.tableNotice ? 'system' : 'banter'
       }
     ]
     this.handStartStacks = { ...this.seatStacks }
     this.table = new PokerTableConstructor({ smallBlind: 50, bigBlind: 100 }, seatOrder.length)
     for (const seatId of seatOrder) {
-      this.table.sitDown(seatMeta[seatId].seatIndex, Math.max(this.seatStacks[seatId], 1000))
+      this.table.sitDown(seatMeta[seatId].seatIndex, this.seatStacks[seatId])
     }
     this.table.startHand(this.dealerSeat)
     this.dealerSeat = (this.dealerSeat + 1) % seatOrder.length
@@ -267,6 +279,7 @@ export class GameService {
 
   private completeHand(board: Card[]) {
     if (this.review) return
+    clearCurrentTurn()
     const endSeats = this.table.seats()
     const showdownCards = this.getShowdownCards()
     const deltas = {} as Record<SeatId, number>
@@ -284,7 +297,10 @@ export class GameService {
       ...this.profile,
       bankroll: this.seatStacks.user,
       rating: Math.max(100, this.profile.rating + ratingDelta),
-      handsPlayed: this.profile.handsPlayed + 1
+      handsPlayed: this.profile.handsPlayed + 1,
+      vpip: this.profile.vpip + (this.userVpipThisHand ? 1 : 0),
+      preflopRaises: this.profile.preflopRaises + (this.userPfrThisHand ? 1 : 0),
+      foldsToRaise: this.profile.foldsToRaise + (this.userFoldedThisHand ? 1 : 0)
     }
     this.storage.saveProfile(this.profile)
 
@@ -466,15 +482,15 @@ export class GameService {
 
   private updateTendencies(seatId: SeatId, action: ActionKind) {
     if (seatId !== 'user') return
-    if (this.getStreet() === 'preflop' && ['call', 'bet', 'raise'].includes(action)) this.profile.vpip += 1
-    if (this.getStreet() === 'preflop' && ['bet', 'raise'].includes(action)) this.profile.preflopRaises += 1
-    if (action === 'fold') this.profile.foldsToRaise += 1
+    if (this.getStreet() === 'preflop' && ['call', 'bet', 'raise'].includes(action)) this.userVpipThisHand = true
+    if (this.getStreet() === 'preflop' && ['bet', 'raise'].includes(action)) this.userPfrThisHand = true
+    if (action === 'fold') this.userFoldedThisHand = true
   }
 
   private getTendencySummary() {
     const hands = Math.max(1, this.profile.handsPlayed)
-    const vpip = Math.round((this.profile.vpip / hands) * 100)
-    const pfr = Math.round((this.profile.preflopRaises / hands) * 100)
+    const vpip = Math.min(100, Math.round((this.profile.vpip / hands) * 100))
+    const pfr = Math.min(100, Math.round((this.profile.preflopRaises / hands) * 100))
     return `VPIP-ish ${vpip}%, preflop raise ${pfr}%, folds logged ${this.profile.foldsToRaise}.`
   }
 
@@ -505,7 +521,10 @@ export class GameService {
   }
 
   private writeBridgeIfNeeded() {
-    if (this.getActingSeat() !== 'uplift') return
+    if (this.getActingSeat() !== 'uplift') {
+      clearCurrentTurn()
+      return
+    }
     const holes = this.getHoleCardsSafe()
     const seats = this.getSeatViews()
     const stacks = Object.fromEntries(seats.map((seat) => [seat.seatId, seat.stack])) as Record<SeatId, number>
@@ -558,5 +577,24 @@ export class GameService {
   private emit() {
     const snapshot = this.getSnapshot()
     for (const listener of this.listeners) listener(snapshot)
+  }
+
+  private ensurePlayableStacks() {
+    const refilled: SeatId[] = []
+    for (const seatId of seatOrder) {
+      if (this.seatStacks[seatId] < tableRefillThreshold) {
+        this.seatStacks[seatId] = initialStack
+        refilled.push(seatId)
+      }
+    }
+    if (!refilled.length) return undefined
+
+    if (refilled.includes('user')) {
+      this.profile = { ...this.profile, bankroll: this.seatStacks.user }
+      this.storage.saveProfile(this.profile)
+    }
+
+    const names = refilled.map((seatId) => seatMeta[seatId].name).join(', ')
+    return `Study-stakes refill: ${names} returned to ${initialStack.toLocaleString()} chips so the table can keep playing.`
   }
 }
