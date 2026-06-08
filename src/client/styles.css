@@ -443,6 +443,35 @@ input:focus-visible {
   font-size: 12px;
 }
 
+.seat-cards {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 5px;
+  min-height: 24px;
+}
+
+.mini-card {
+  min-width: 34px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(23, 50, 59, .18);
+  border-radius: 8px;
+  background: white;
+  font-size: 12px;
+  font-weight: 950;
+  box-shadow: 0 3px 0 rgba(23, 50, 59, .1);
+}
+
+.mini-card.red {
+  color: #d84a48;
+}
+
+.mini-card.black {
+  color: var(--ink);
+}
+
 .seat-0 { left: calc(50% - 73px); bottom: 18px; }
 .seat-1 { left: calc(50% - 73px); top: 18px; }
 .seat-2 { left: 16px; top: 124px; }

@@ -63,6 +63,8 @@ export type ReviewSnapshot = {
   bankrollAfter: number
   ratingDelta: number
   ratingAfter: number
+  board: Card[]
+  finalPot: number
   winningSeatIds: SeatId[]
   winningHandName: string
   lesson: string

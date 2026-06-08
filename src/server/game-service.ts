@@ -102,8 +102,8 @@ export class GameService {
       actionSeq: this.actionSeq,
       turnToken: this.turnToken,
       actingSeatId,
-      board: this.getBoardSafe(),
-      pot: this.getPot(),
+      board: this.review?.board ?? this.getBoardSafe(),
+      pot: this.review?.finalPot ?? this.getPot(),
       seats: this.getSeatViews(),
       legalActions: isComplete || !actingSeatId ? [] : this.getLegalActions(),
       publicActions: this.publicActions,
@@ -234,14 +234,16 @@ export class GameService {
 
   private progressStreetOrShowdown() {
     if (!this.table.isHandInProgress()) {
-      this.completeHand(this.getBoardSafe())
+      this.completeHand(this.getBoardSafe(), this.getShowdownCards(), this.getPot())
       return
     }
     if (this.table.isBettingRoundInProgress()) return
     if (this.table.areBettingRoundsCompleted()) {
       const board = this.getBoardSafe()
+      const showdownCards = this.getShowdownCards()
+      const finalPot = this.getPot()
       this.table.showdown()
-      this.completeHand(board)
+      this.completeHand(board, showdownCards, finalPot)
       return
     }
     this.table.endBettingRound()
@@ -278,17 +280,18 @@ export class GameService {
     clearLastError()
   }
 
-  private completeHand(board: Card[]) {
+  private completeHand(board: Card[], showdownCards = this.getShowdownCards(), capturedPot = this.getPot()) {
     if (this.review) return
     clearCurrentTurn()
     const endSeats = this.table.seats()
-    const showdownCards = this.getShowdownCards()
     const deltas = {} as Record<SeatId, number>
     for (const seatId of seatOrder) {
       const stack = endSeats[seatMeta[seatId].seatIndex]?.stack ?? this.seatStacks[seatId]
       this.seatStacks[seatId] = stack
       deltas[seatId] = stack - this.handStartStacks[seatId]
     }
+    const settledPot = Object.values(deltas).filter((delta) => delta > 0).reduce((sum, delta) => sum + delta, 0)
+    const finalPot = capturedPot > 0 ? capturedPot : settledPot
     const winningSeatIds = seatOrder.filter((seatId) => deltas[seatId] === Math.max(...Object.values(deltas)))
     const bankrollDelta = deltas.user
     const ratingDelta = this.getRatingDelta(bankrollDelta)
@@ -312,6 +315,8 @@ export class GameService {
       bankrollAfter: this.profile.bankroll,
       ratingDelta,
       ratingAfter: this.profile.rating,
+      board,
+      finalPot,
       winningSeatIds,
       winningHandName,
       lesson: this.buildLesson(bankrollDelta),
@@ -319,7 +324,7 @@ export class GameService {
       showdownCards
     }
     this.storage.recordHand(this.review)
-    this.writeLatestHand(board)
+    this.writeLatestHand()
     this.chat.push({
       id: randomUUID(),
       seatId: 'uplift',
@@ -553,7 +558,7 @@ export class GameService {
     writeCurrentTurn(packet)
   }
 
-  private writeLatestHand(board: Card[]) {
+  private writeLatestHand() {
     if (!this.review) return
     const packet: LatestHandPacket = {
       schemaVersion: 1,
@@ -571,7 +576,7 @@ export class GameService {
       publicActions: this.publicActions,
       lesson: this.review.lesson,
       showdown: {
-        board,
+        board: this.review.board,
         revealedHands: this.review.showdownCards,
         winningHandName: this.review.winningHandName
       },

@@ -66,7 +66,12 @@ test('offers a Codex review command after a completed hand', async ({ page, requ
   }
 
   expect(state.phase).toBe('hand-complete')
+  expect(state.board).toEqual(state.review.board)
+  expect(state.pot).toBe(state.review.finalPot)
   await page.reload()
   await expect(page.getByText('Review packet is ready')).toBeVisible()
   await expect(page.getByText('npm run --silent game:review -- --post')).toBeVisible()
+  if (state.board.length > 0) {
+    await expect(page.locator('.community-cards .playing-card.empty')).toHaveCount(5 - state.board.length)
+  }
 })

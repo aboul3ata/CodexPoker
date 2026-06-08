@@ -243,7 +243,23 @@ function Seat({ seat, index }: { seat: SeatView; index: number }) {
       </div>
       <small>{formatChips(seat.stack)}</small>
       {seat.bet > 0 ? <em>{formatChips(seat.bet)}</em> : null}
+      {seat.revealedCards?.length ? (
+        <div className="seat-cards" aria-label={`${seat.name} revealed cards`}>
+          {seat.revealedCards.map((card, cardIndex) => (
+            <MiniCard card={card} key={`${seat.seatId}-${card.rank}-${card.suit}-${cardIndex}`} />
+          ))}
+        </div>
+      ) : null}
     </article>
+  )
+}
+
+function MiniCard({ card }: { card: Card }) {
+  const red = card.suit === 'hearts' || card.suit === 'diamonds'
+  return (
+    <span className={`mini-card ${red ? 'red' : 'black'}`}>
+      {card.rank}{suitSymbol(card.suit)}
+    </span>
   )
 }
 

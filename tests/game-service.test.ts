@@ -101,6 +101,8 @@ describe('GameService', () => {
     expect(state.phase).toBe('hand-complete')
     expect(state.review).toBeDefined()
     expect(state.bankroll).toBeGreaterThan(0)
+    expect(state.board).toEqual(state.review?.board)
+    expect(state.pot).toBe(state.review?.finalPot)
     expect(state.history).toHaveLength(1)
     expect(state.history[0].bankroll).toBe(state.bankroll)
     expect(state.history[0].rating).toBe(state.rating)
@@ -110,6 +112,7 @@ describe('GameService', () => {
     expect(packet.result.bankrollAfter).toBe(state.bankroll)
     expect(packet.result.ratingAfter).toBe(state.rating)
     expect(packet.lesson).toBe(state.review?.lesson)
+    expect(packet.showdown?.board).toEqual(state.review?.board)
   })
 
   it('plays repeated hands without losing table-chip conservation or hanging', () => {
