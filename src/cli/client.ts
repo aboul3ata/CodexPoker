@@ -33,6 +33,18 @@ export async function postApi(pathname: string, body: unknown): Promise<ApiResul
   return payload
 }
 
+export async function getApi(pathname: string): Promise<ApiResult> {
+  const response = await fetch(`${getServerUrl()}${pathname}`)
+  const payload = (await response.json()) as ApiResult
+  if (!response.ok) {
+    const error = new Error(payload.message ?? `HTTP ${response.status}`) as Error & { code?: string; status?: number }
+    error.code = payload.code
+    error.status = response.status
+    throw error
+  }
+  return payload
+}
+
 export function parseArgs(argv: string[]) {
   const args: Record<string, string | boolean> = {}
   for (let i = 0; i < argv.length; i += 1) {

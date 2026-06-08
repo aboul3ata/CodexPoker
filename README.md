@@ -46,7 +46,7 @@ npm run game:review
 npm run game:review -- --post
 ```
 
-`--post` adds Uplift's review note to the visible table-talk lane in the running preview.
+`--post` adds Uplift's review note to the visible table-talk lane only while the running preview is still on that completed hand. If you already started the next hand, the command refuses to post the stale review.
 
 ## Scripts
 

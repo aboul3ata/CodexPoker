@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import type { LatestHandPacket } from '../shared/contracts'
-import { buildReviewBrief, buildReviewMessage } from '../shared/review-copy'
-import { parseArgs, postApi } from './client'
+import type { GameSnapshot, LatestHandPacket } from '../shared/contracts'
+import { buildReviewBrief, buildReviewMessage, getReviewPostBlocker } from '../shared/review-copy'
+import { getApi, parseArgs, postApi } from './client'
 
 const args = parseArgs(process.argv.slice(2))
 const filePath = path.resolve(String(args.file ?? 'data/bridge/latest-hand.json'))
@@ -28,7 +28,14 @@ if (!shouldPost) {
   process.exit(0)
 }
 
-postApi('/api/say', { seat: 'uplift', message: suggestedMessage })
+getApi('/api/state')
+  .then((stateResult) => {
+    const state = stateResult.state as GameSnapshot | undefined
+    if (!state) throw Object.assign(new Error('The running preview did not return a game state.'), { code: 'storage_unavailable' })
+    const blocker = getReviewPostBlocker(packet, state)
+    if (blocker) throw Object.assign(new Error(blocker), { code: 'stale_turn' })
+    return postApi('/api/say', { seat: 'uplift', message: suggestedMessage })
+  })
   .then((result) => {
     console.log(JSON.stringify({ ...output, posted: true, state: result.state }, null, 2))
   })
