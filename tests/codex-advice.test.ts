@@ -19,6 +19,7 @@ describe('Codex command advice', () => {
     expect(chooseCodexAction(baseState.legalActions)).toEqual({ kind: 'call' })
 
     const commands = buildCodexCommands(baseState)
+    expect(commands.turn).toBe('npm run --silent game:turn')
     expect(commands.act).toContain('--seat uplift')
     expect(commands.act).toContain('--action call')
     expect(commands).not.toHaveProperty('say')

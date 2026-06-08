@@ -1,6 +1,7 @@
 import type { ActionKind, GameSnapshot, LegalAction } from './contracts'
 
 export type CodexCommandAdvice = {
+  turn?: string
   act?: string
   next?: string
   review?: string
@@ -30,6 +31,7 @@ export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'p
   const action = chooseCodexAction(state.legalActions)
   const amountArg = action.amount ? ` --amount ${action.amount}` : ''
   return {
+    turn: 'npm run --silent game:turn',
     act: `npm run --silent game:act -- --seat uplift --turn-token ${state.turnToken} --action ${action.kind}${amountArg}`
   }
 }
