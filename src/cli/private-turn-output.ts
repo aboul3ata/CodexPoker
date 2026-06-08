@@ -1,6 +1,8 @@
 import type { CurrentTurnPacket, GameSnapshot, LegalAction, SeatId } from '../shared/contracts'
+import { scoreHolding } from '../server/bot-strength'
 
 export function buildPrivateTurnOutput(state: GameSnapshot, packet: CurrentTurnPacket, filePath: string) {
+  const recommendation = buildRecommendedAction(packet)
   return {
     ok: true,
     protocol: {
@@ -32,6 +34,7 @@ export function buildPrivateTurnOutput(state: GameSnapshot, packet: CurrentTurnP
     decision: {
       ...packet,
       filePath,
+      recommendation,
       actionCommands: packet.legalActions.map((action) => ({
         ...action,
         command: buildActCommand(packet.turnToken, action)
@@ -50,10 +53,58 @@ export function validatePrivateTurn(state: GameSnapshot, packet: CurrentTurnPack
 }
 
 function buildActCommand(turnToken: string, action: LegalAction) {
-  const amount = action.kind === 'bet' || action.kind === 'raise'
-    ? ` --amount ${action.min ?? action.max ?? 0}`
+  return buildActionCommand(turnToken, action.kind, action.kind === 'bet' || action.kind === 'raise' ? action.min ?? action.max : undefined)
+}
+
+function buildActionCommand(turnToken: string, action: LegalAction['kind'], amount?: number) {
+  const amountArg = action === 'bet' || action === 'raise'
+    ? ` --amount ${amount ?? 0}`
     : ''
-  return `npm run --silent game:act -- --seat uplift --turn-token ${turnToken} --action ${action.kind}${amount}`
+  return `npm run --silent game:act -- --seat uplift --turn-token ${turnToken} --action ${action}${amountArg}`
+}
+
+function buildRecommendedAction(packet: CurrentTurnPacket) {
+  const strength = scoreHolding(packet.holeCards, packet.board)
+  const legal = packet.legalActions
+  const check = legal.find((action) => action.kind === 'check')
+  const call = legal.find((action) => action.kind === 'call')
+  const fold = legal.find((action) => action.kind === 'fold')
+  const bet = legal.find((action) => action.kind === 'bet')
+  const raise = legal.find((action) => action.kind === 'raise')
+  const toCall = call?.toCall ?? 0
+  const cheapCall = toCall > 0 && toCall <= Math.max(100, packet.pot * 0.28)
+
+  if (raise && strength >= 0.74) return recommendation(packet, raise, chooseWager(raise, packet.pot, strength), strength, 'private strength supports pressure')
+  if (bet && strength >= 0.62) return recommendation(packet, bet, chooseWager(bet, packet.pot, strength), strength, 'private strength can lead into the pot')
+  if (call && (strength >= 0.5 || cheapCall)) return recommendation(packet, call, undefined, strength, cheapCall ? 'price is small enough to continue' : 'private strength can continue')
+  if (check) return recommendation(packet, check, undefined, strength, 'checking keeps the pot controlled')
+  if (fold) return recommendation(packet, fold, undefined, strength, 'private strength does not justify the price')
+
+  const fallback = legal[0] ?? { kind: 'fold' as const }
+  return recommendation(packet, fallback, fallback.kind === 'bet' || fallback.kind === 'raise' ? fallback.min ?? fallback.max : undefined, strength, 'fallback to first legal action')
+}
+
+function recommendation(packet: CurrentTurnPacket, action: LegalAction, amount: number | undefined, strength: number, reason: string) {
+  return {
+    action: action.kind,
+    amount,
+    strength,
+    confidence: strength >= 0.74 ? 'high' : strength >= 0.5 ? 'medium' : 'low',
+    reason,
+    command: buildActionCommand(packet.turnToken, action.kind, amount)
+  }
+}
+
+function chooseWager(action: LegalAction, pot: number, strength: number) {
+  const min = action.min ?? action.max ?? 0
+  const max = action.max ?? min
+  const fraction = strength >= 0.84 ? 0.72 : strength >= 0.74 ? 0.55 : 0.42
+  const target = Math.max(min, roundToChip(pot * fraction))
+  return Math.max(min, Math.min(max, target))
+}
+
+function roundToChip(value: number) {
+  return Math.max(0, Math.round(value / 50) * 50)
 }
 
 function buildPrivateDecisionLine(state: GameSnapshot) {

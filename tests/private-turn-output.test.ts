@@ -73,8 +73,35 @@ describe('private Uplift turn output', () => {
     expect(JSON.stringify(output.chatSafe)).not.toContain('holeCards')
     expect(JSON.stringify(output.chatSafe)).not.toContain('spades')
     expect(output.chatSafe.visibleLineup.every((item) => !('cards' in item))).toBe(true)
+    expect(output.decision.recommendation.action).toBe('call')
+    expect(output.decision.recommendation.command).toContain('--action call')
+    expect(output.decision.recommendation.reason).toContain('price')
     expect(output.decision.actionCommands.find((item) => item.kind === 'raise')?.command).toContain('--amount 300')
     expect(output.protocol.chatBoundary).toContain('chatSafe')
+  })
+
+  it('recommends private pressure for a strong Uplift holding', () => {
+    const output = buildPrivateTurnOutput(baseState, {
+      ...packet,
+      board: [
+        { rank: 'J', suit: 'diamonds' },
+        { rank: 'Q', suit: 'hearts' },
+        { rank: '2', suit: 'clubs' },
+        { rank: '8', suit: 'spades' }
+      ],
+      holeCards: [
+        { rank: '9', suit: 'spades' },
+        { rank: 'T', suit: 'clubs' }
+      ],
+      pot: 1200
+    }, '/tmp/current-turn.json')
+
+    expect(output.decision.recommendation.action).toBe('raise')
+    expect(output.decision.recommendation.amount).toBeGreaterThanOrEqual(300)
+    expect(output.decision.recommendation.confidence).toBe('high')
+    expect(output.decision.recommendation.command).toContain('--action raise')
+    expect(JSON.stringify(output.chatSafe)).not.toContain('spades')
+    expect(JSON.stringify(output.chatSafe)).not.toContain('clubs')
   })
 
   it('rejects stale or non-Uplift private turn packets', () => {

@@ -13,12 +13,10 @@ test('renders the playable CodexPoker table', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'Table beats' })).toBeVisible()
   const tableBox = await page.locator('.table-felt').boundingBox()
   const railBox = await page.getByRole('region', { name: 'Table beats' }).boundingBox()
-  const footerBox = await page.locator('.action-footer').boundingBox()
+  const communityBox = await page.locator('.community-cards').boundingBox()
   expect(railBox?.y).toBeGreaterThan(tableBox?.y ?? 0)
   expect((railBox?.y ?? 0) + (railBox?.height ?? 0)).toBeLessThan((tableBox?.y ?? 0) + (tableBox?.height ?? 0))
-  if ((page.viewportSize()?.width ?? 0) >= 720) {
-    expect((railBox?.y ?? 0) + (railBox?.height ?? 0)).toBeLessThan(footerBox?.y ?? 0)
-  }
+  expect((railBox?.y ?? 0) + (railBox?.height ?? 0)).toBeLessThan(communityBox?.y ?? 0)
 
   await page.getByRole('button', { name: 'Lineup' }).click()
   const lineup = page.getByRole('region', { name: 'Table lineup' })
