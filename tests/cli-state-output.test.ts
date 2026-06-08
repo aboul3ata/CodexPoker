@@ -161,6 +161,7 @@ describe('safe CLI state output', () => {
     expect(output.codexChat.visibleLineup.find((seat) => seat.seatId === 'uplift')?.tableRole).toBe('Chat rival')
     expect(output.codexChat.visibleLineup.every((seat) => !('cards' in seat))).toBe(true)
     expect(output.codexChat.mode).toBe('ali-to-act')
+    expect(output.codexChat.suggestedTableLine).toContain('Your move')
     expect(output.codexChat.tableTalkCue).toContain('Wait for Ali to act')
     expect(output.codexChat.publicTableStory).toContain('last action: Atlas check on flop')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('Do not use fallback')
@@ -178,9 +179,33 @@ describe('safe CLI state output', () => {
 
     expect(output.codexChat.mode).toBe('uplift-to-act')
     expect(output.codexChat.tableTalkCue).toContain('Banter here as Uplift')
+    expect(output.codexChat.suggestedTableLine).toContain('public context only')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('codexTurn.holeCards')
     expect(output.codexChat.visibleLineup.find((seat) => seat.seatId === 'nova')?.modelLabel).toBe('Heuristic pressure v0')
     expect(guide).not.toContain('spades')
     expect(guide).not.toContain('clubs')
+  })
+
+  it('suggests a public chat line after Uplift acts without revealing cards', () => {
+    const output = buildSafeStateOutput({
+      ...baseState,
+      publicActions: [
+        ...baseState.publicActions,
+        {
+          seq: 13,
+          seatId: 'uplift',
+          name: 'Uplift',
+          street: 'flop',
+          action: 'raise',
+          amount: 400,
+          at: '2026-06-08T14:46:03.254Z'
+        }
+      ]
+    })
+    const serialized = JSON.stringify(output.codexChat)
+
+    expect(output.codexChat.suggestedTableLine).toBe('I raised to 400. Your move, Ali.')
+    expect(serialized).not.toContain('spades')
+    expect(serialized).not.toContain('clubs')
   })
 })

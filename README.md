@@ -28,7 +28,7 @@ That prints the current hand, recent public action trail, a `codexChat` guide fo
 The intended loop is:
 
 1. Run `npm run --silent game:state`.
-2. Use `codexChat.tableTalkCue` and `codexChat.publicTableStory` to banter in this Codex chat.
+2. Use `codexChat.suggestedTableLine`, `codexChat.tableTalkCue`, and `codexChat.publicTableStory` to banter in this Codex chat.
 3. If `codexTurn` is present, use its hole cards privately to choose an Uplift action.
 4. Submit only Uplift's move with `npm run --silent game:act -- ...`.
 
