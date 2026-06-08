@@ -2,7 +2,7 @@
 
 CodexPoker is a local-first Texas Hold'em table designed to run in the Codex preview. You play as the human seat, Uplift is the Codex-controlled seat, and local bots keep the table moving.
 
-The app keeps a local SQLite profile with bankroll, progress rating, recent hand results, and a compact stack trail in the preview.
+The app keeps a local SQLite profile with bankroll, Elo rating, recent hand results, and a compact stack trail in the preview.
 
 ## Quickstart
 
@@ -45,7 +45,7 @@ After each hand, the server writes:
 
 - `data/bridge/latest-hand.json`
 
-That packet includes the public action history, showdown cards, bankroll/progress deltas, and ending bankroll/progress values for Codex hand review.
+That packet includes the public action history, showdown cards, bankroll/Elo deltas, and ending bankroll/Elo values for Codex hand review.
 
 Codex can prepare or post the hand review with:
 

@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 test('renders the playable CodexPoker table', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'CodexPoker' })).toBeVisible()
+  await expect(page.getByLabel('Session status').getByText('Elo', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Poker table' })).toBeVisible()
   await expect(page.getByText(/Table talk/)).toBeVisible()
   await expect(page.getByText('Uplift review', { exact: true })).toBeVisible()

@@ -17,9 +17,9 @@ export function buildReviewBrief(packet: LatestHandPacket) {
 
   return [
     `Hand: ${packet.handId}`,
-    `Result: ${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} progress`,
+    `Result: ${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} Elo`,
     `Bankroll now: ${formatChips(packet.result.bankrollAfter)} chips`,
-    `Progress now: ${packet.result.ratingAfter}`,
+    `Elo now: ${packet.result.ratingAfter}`,
     `Winner: ${winners}`,
     `Winning hand: ${packet.showdown?.winningHandName ?? 'Last player standing'}`,
     `Board: ${board}`,
@@ -32,7 +32,7 @@ export function buildReviewBrief(packet: LatestHandPacket) {
 export function buildReviewMessage(packet: LatestHandPacket) {
   const result = packet.result.bankrollDelta > 0 ? 'Nice pot' : packet.result.bankrollDelta < 0 ? 'Tiny tuition' : 'Break-even note'
   const userLine = getUserLine(packet.publicActions)
-  return `${result}: ${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} progress. Want the quick review? I saw ${userLine}. ${packet.lesson}`
+  return `${result}: ${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} Elo. Want the quick review? I saw ${userLine}. ${packet.lesson}`
 }
 
 export function getReviewPostBlocker(packet: LatestHandPacket, state: Pick<GameSnapshot, 'handId' | 'phase'>) {

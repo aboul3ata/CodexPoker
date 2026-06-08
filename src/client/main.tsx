@@ -89,7 +89,7 @@ function App() {
           </div>
         </div>
         <Stat label="Bankroll" value={formatChips(state.bankroll)} />
-        <Stat label="Progress" value={String(state.rating)} />
+        <Stat label="Elo" value={String(state.rating)} />
         <div className={`bridge-pill ${state.bridgeStatus}`}>
           <Zap size={16} />
           {bridgeLabel(state.bridgeStatus)}
@@ -421,7 +421,7 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
         <>
           <div className="result-card">
             <span>{review.bankrollDelta >= 0 ? '+' : ''}{formatChips(review.bankrollDelta)}</span>
-            <strong>{review.ratingDelta >= 0 ? '+' : ''}{review.ratingDelta} progress</strong>
+            <strong>{review.ratingDelta >= 0 ? '+' : ''}{review.ratingDelta} Elo</strong>
           </div>
           <h2>{review.winningHandName}</h2>
           <p>{review.lesson}</p>
@@ -479,7 +479,7 @@ function StackTrail({
       <div
         className={`sparkline ${history.length ? '' : 'empty'} ${bars.length === 1 ? 'solo' : ''}`}
         role="img"
-        aria-label={`Current bankroll ${formatChips(bankroll)}, progress ${rating}`}
+        aria-label={`Current bankroll ${formatChips(bankroll)}, Elo ${rating}`}
       >
         {bars.map((point) => (
           <span
@@ -496,7 +496,7 @@ function StackTrail({
           <b>{formatChips(bankroll)}</b>
         </div>
         <div>
-          <span>Progress</span>
+          <span>Elo</span>
           <b>{rating}</b>
         </div>
       </div>

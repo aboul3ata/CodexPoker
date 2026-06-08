@@ -37,8 +37,9 @@ describe('review copy', () => {
   it('builds a compact Codex-facing hand brief from the latest hand packet', () => {
     const brief = buildReviewBrief(packet)
 
-    expect(brief).toContain('Result: -150 chips, -2 progress')
+    expect(brief).toContain('Result: -150 chips, -2 Elo')
     expect(brief).toContain('Bankroll now: 9,850 chips')
+    expect(brief).toContain('Elo now: 998')
     expect(brief).toContain('Winner: Uplift')
     expect(brief).toContain('Ali line: preflop call 100, flop fold')
     expect(brief).toContain('Lesson seed: Ask what story the raise is telling before paying.')
