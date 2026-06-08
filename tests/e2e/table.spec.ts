@@ -78,8 +78,9 @@ test('routes Uplift turns to this Codex chat instead of preview controls', async
 
   const codexTurn = page.getByRole('region', { name: 'Codex chat turn' })
   await expect(codexTurn).toBeVisible()
-  await expect(codexTurn.getByText('Play me from this Codex chat.')).toBeVisible()
-  await expect(codexTurn.getByText('npm run --silent game:play')).toBeVisible()
+  await expect(codexTurn.getByText('Meet me in this Codex chat.')).toBeVisible()
+  await expect(codexTurn.getByText('npm run --silent game:codex')).toBeVisible()
+  await expect(codexTurn.getByText('npm run --silent game:play')).toHaveCount(0)
   await expect(page.getByText('Uplift is thinking.')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
 })

@@ -399,10 +399,10 @@ function UpliftBridgePrompt({ state }: { state: GameSnapshot }) {
       </div>
       <div className="codex-turn-copy">
         <span>Uplift turn</span>
-        <strong>Play me from this Codex chat.</strong>
+        <strong>Meet me in this Codex chat.</strong>
         <p>{buildUpliftBridgeLine(state)}</p>
       </div>
-      <code>npm run --silent game:play</code>
+      <code>npm run --silent game:codex</code>
     </section>
   )
 }
