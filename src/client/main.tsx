@@ -293,11 +293,13 @@ function LineupDrawer({
 
 function PokerTable({ state }: { state: GameSnapshot }) {
   const seats = state.seats
+  const latestAction = state.publicActions.at(-1)
+  const latestPaidAction = [...state.publicActions].reverse().find((action) => (action.amount ?? 0) > 0)
   return (
     <section className="felt-stage">
       <div className="table-felt">
         {seats.map((seat, index) => (
-          <Seat seat={seat} key={seat.seatId} index={index} />
+          <Seat seat={seat} key={seat.seatId} index={index} latestAction={latestAction} />
         ))}
         <div className="board-zone">
           <div className="street-label">{state.street}</div>
@@ -305,8 +307,6 @@ function PokerTable({ state }: { state: GameSnapshot }) {
             <img src="/assets/generated/chip.svg" alt="" />
             <span key={state.pot}>{formatChips(state.pot)}</span>
           </div>
-          <LatestActionBurst state={state} />
-          <ActionRail state={state} />
           <div className="community-cards" aria-label="Community cards">
             {Array.from({ length: 5 }).map((_, index) => {
               const card = state.board[index]
@@ -320,22 +320,26 @@ function PokerTable({ state }: { state: GameSnapshot }) {
             })}
           </div>
         </div>
+        <MoneyFlight action={latestPaidAction} seat={latestPaidAction ? seats.find((seat) => seat.seatId === latestPaidAction.seatId) : undefined} />
         <div className="hero-hand" aria-label="Your hole cards">
           {(state.seats.find((seat) => seat.seatId === 'user')?.cards ?? []).map((card, index) => (
             <PlayingCard card={card} key={`${card.rank}-${card.suit}-${index}`} large />
           ))}
         </div>
       </div>
+      <ActionRail state={state} />
     </section>
   )
 }
 
-function Seat({ seat, index }: { seat: SeatView; index: number }) {
+function Seat({ seat, index, latestAction }: { seat: SeatView; index: number; latestAction?: PublicAction }) {
+  const bubble = buildSeatBubble(seat, latestAction)
   return (
     <article
       aria-label={`${seat.name}, ${seat.tableRole}, ${formatChips(seat.stack)} chips`}
       className={`seat seat-${index} ${seat.kind} ${seat.isToAct ? 'to-act' : ''} ${seat.isFolded ? 'folded' : ''}`}
     >
+      {bubble ? <span className={`seat-speech ${bubble.kind}`}>{bubble.label}</span> : null}
       <img src={avatarBySeat[seat.seatId]} alt={`${seat.name} avatar`} />
       <span className={`seat-kind-badge ${seat.kind}`} aria-label={seatKindLabel(seat.kind)}>
         <SeatKindIcon kind={seat.kind} />
@@ -356,6 +360,41 @@ function Seat({ seat, index }: { seat: SeatView; index: number }) {
       ) : null}
     </article>
   )
+}
+
+function MoneyFlight({ action, seat }: { action?: PublicAction; seat?: SeatView }) {
+  if (!action?.amount || !seat) return null
+  return (
+    <div
+      aria-hidden="true"
+      className={`money-flight money-from-${seat.seatIndex} ${seat.kind}`}
+      key={`${action.seq}-${action.amount}`}
+    >
+      <img src="/assets/generated/chip.svg" alt="" />
+      <img src="/assets/generated/chip.svg" alt="" />
+      <span>{formatChips(action.amount)}</span>
+    </div>
+  )
+}
+
+function buildSeatBubble(seat: SeatView, latestAction?: PublicAction): { label: string; kind: 'turn' | 'action' | 'folded' } | undefined {
+  if (latestAction?.seatId === seat.seatId) return { label: formatBubbleAction(latestAction), kind: 'action' }
+  if (seat.isFolded) return { label: 'Folded', kind: 'folded' }
+  if (seat.isToAct) {
+    if (seat.kind === 'human') return { label: 'Your turn', kind: 'turn' }
+    if (seat.kind === 'codex') return { label: 'My turn', kind: 'turn' }
+    return { label: `${seat.name} acts`, kind: 'turn' }
+  }
+  return undefined
+}
+
+function formatBubbleAction(action: PublicAction) {
+  if (action.action === 'raise') return `Raises ${formatChips(action.amount ?? 0)}`
+  if (action.action === 'bet') return `Bets ${formatChips(action.amount ?? 0)}`
+  if (action.action === 'call') return `Calls${action.amount ? ` ${formatChips(action.amount)}` : ''}`
+  if (action.action === 'check') return 'Checks'
+  if (action.action === 'fold') return 'Folds'
+  return formatActionKind(action.action)
 }
 
 function SeatKindIcon({ kind }: { kind: SeatView['kind'] }) {
@@ -392,72 +431,6 @@ function PlayingCard({ card, muted, large }: { card?: Card; muted?: boolean; lar
       <b>{suitSymbol(card.suit)}</b>
     </div>
   )
-}
-
-function LatestActionBurst({ state }: { state: GameSnapshot }) {
-  const lastAction = state.publicActions.at(-1)
-  const botRun = getRecentBotRun(state.publicActions)
-  const isBotSweep = botRun.length > 1
-  const actor = lastAction ? state.seats.find((seat) => seat.seatId === lastAction.seatId) : undefined
-  const kind = actor?.kind ?? 'codex'
-
-  if (lastAction && isBotSweep) {
-    return (
-      <section
-        aria-live="polite"
-        className="latest-action-burst bot bot-sweep"
-        key={botRun.map((action) => action.seq).join('-')}
-      >
-        <div className="burst-avatar-stack" aria-hidden="true">
-          {botRun.slice(0, 4).map((action) => (
-            <div className="burst-avatar" key={action.seq}>
-              <img src={avatarBySeat[action.seatId]} alt="" />
-            </div>
-          ))}
-        </div>
-        <div className="burst-copy">
-          <span>{lastAction.street} bot sweep</span>
-          <strong>{formatBotRun(botRun)}</strong>
-        </div>
-      </section>
-    )
-  }
-
-  return (
-    <section
-      aria-live="polite"
-      className={`latest-action-burst ${lastAction ? kind : 'idle'}`}
-      key={lastAction?.seq ?? 'opening'}
-    >
-      <div className="burst-avatar">
-        <img src={lastAction ? avatarBySeat[lastAction.seatId] : avatarBySeat.uplift} alt="" />
-        <span className={`seat-kind-badge ${kind}`} aria-hidden="true">
-          <SeatKindIcon kind={kind} />
-        </span>
-      </div>
-      <div className="burst-copy">
-        <span>{lastAction ? `${lastAction.street} action` : 'Opening deal'}</span>
-        <strong>{lastAction ? formatActionLine(lastAction) : 'Cards are in the air'}</strong>
-      </div>
-    </section>
-  )
-}
-
-function getRecentBotRun(actions: PublicAction[]) {
-  const lastAction = actions.at(-1)
-  if (!lastAction || seatKindFor(lastAction.seatId) !== 'bot') return []
-
-  const run: PublicAction[] = []
-  for (let index = actions.length - 1; index >= 0; index -= 1) {
-    const action = actions[index]
-    if (action.street !== lastAction.street || seatKindFor(action.seatId) !== 'bot') break
-    run.unshift(action)
-  }
-  return run
-}
-
-function formatBotRun(actions: PublicAction[]) {
-  return actions.map(formatActionLine).join(' · ')
 }
 
 function ActionRail({ state }: { state: GameSnapshot }) {

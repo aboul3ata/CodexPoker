@@ -15,11 +15,10 @@ test('renders the playable CodexPoker table', async ({ page }) => {
   const railBox = await page.getByRole('region', { name: 'Table beats' }).boundingBox()
   const communityBox = await page.locator('.community-cards').boundingBox()
   const heroHandBox = await page.locator('.hero-hand').boundingBox()
-  expect(railBox?.y).toBeGreaterThan(tableBox?.y ?? 0)
-  expect((railBox?.y ?? 0) + (railBox?.height ?? 0)).toBeLessThan((tableBox?.y ?? 0) + (tableBox?.height ?? 0))
-  expect((railBox?.y ?? 0) + (railBox?.height ?? 0)).toBeLessThan(communityBox?.y ?? 0)
+  expect(railBox?.y).toBeGreaterThan((tableBox?.y ?? 0) + (tableBox?.height ?? 0))
   expect((communityBox?.y ?? 0) + (communityBox?.height ?? 0)).toBeLessThan(heroHandBox?.y ?? 0)
-  await expect(page.locator('.latest-action-burst')).toBeVisible()
+  await expect(page.locator('.latest-action-burst')).toHaveCount(0)
+  await expect(page.locator('.seat-speech').first()).toBeVisible()
   await expect(page.locator('.seat.bot .seat-kind-badge')).toHaveCount(4)
   await expect(page.locator('.seat.codex .seat-kind-badge')).toHaveCount(1)
 
@@ -117,9 +116,11 @@ test('prioritizes fast-fold simulation after Ali folds', async ({ page, request 
   await page.reload()
   await expect(page.getByRole('button', { name: 'Simulate to result' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Codex chat turn' })).toHaveCount(0)
+  await expect(page.locator('.seat.human.folded')).toBeVisible()
+  await expect(page.locator('.seat.human .seat-speech')).toContainText(/Fold/)
 })
 
-test('summarizes rapid bot runs as a multi-bot sweep', async ({ page, request }) => {
+test('shows rapid bot runs in seat bubbles and the table beat log', async ({ page, request }) => {
   await page.goto('/')
   let state = (await (await request.post('/api/new-hand')).json()).state
   let run: Array<{ name: string; seatId: string }> = []
@@ -155,10 +156,10 @@ test('summarizes rapid bot runs as a multi-bot sweep', async ({ page, request })
 
   expect(run.length).toBeGreaterThan(1)
   await page.reload()
-  const burst = page.locator('.latest-action-burst')
-  await expect(burst).toContainText('bot sweep')
-  await expect(burst).toContainText(run[0].name)
-  await expect(burst).toContainText(run.at(-1)?.name ?? '')
+  await expect(page.locator('.latest-action-burst')).toHaveCount(0)
+  await expect(page.locator('.seat.bot .seat-speech.action')).toBeVisible()
+  const rail = page.getByRole('region', { name: 'Table beats' })
+  await expect(rail).toContainText(run.at(-1)?.name ?? '')
 })
 
 test('lets the user size a bet or raise from the preview', async ({ page, request }) => {
@@ -201,6 +202,7 @@ test('lets the user size a bet or raise from the preview', async ({ page, reques
   await page.reload()
   await page.getByLabel(fieldName).fill(String(amount))
   await page.getByRole('button', { name: new RegExp(`${wager.kind === 'raise' ? 'Raise to' : 'Bet'} ${amount.toLocaleString('en-US')}`) }).click()
+  await expect(page.locator('.money-flight')).toBeVisible()
 
   const nextState = (await (await request.get('/api/state')).json()).state
   expect(nextState.publicActions.some((action: { seatId: string; action: string; amount?: number }) =>

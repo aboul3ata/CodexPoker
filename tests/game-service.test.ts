@@ -42,6 +42,10 @@ function tableChipTotal(state: GameSnapshot) {
   return state.seats.reduce((sum, seat) => sum + seat.stack + seat.bet, 0)
 }
 
+function isBotSeat(seatId: string) {
+  return seatId !== 'user' && seatId !== 'uplift'
+}
+
 function variedUserAction(state: GameSnapshot, hand: number, step: number) {
   const legal = state.legalActions
   const wager = legal.find((action) => action.kind === 'raise') ?? legal.find((action) => action.kind === 'bet')
@@ -207,6 +211,57 @@ describe('GameService', () => {
     } finally {
       random.mockRestore()
     }
+  })
+
+  it('makes local bots fold to expensive pressure with marginal holdings', () => {
+    let sawBotFold = false
+
+    for (let hand = 0; hand < 40 && !sawBotFold; hand += 1) {
+      let state = service.startNewHand()
+      if (state.actingSeatId !== 'user') continue
+
+      const raise = state.legalActions.find((action) => action.kind === 'raise')
+      if (!raise) continue
+
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.99)
+      try {
+        state = service.submitAction({
+          seat: 'user',
+          turnToken: state.turnToken,
+          action: 'raise',
+          amount: raise.max ?? raise.min
+        })
+
+        if (state.actingSeatId === 'uplift') state = service.useUpliftFallback()
+      } finally {
+        random.mockRestore()
+      }
+
+      sawBotFold = state.publicActions.some((action) => isBotSeat(action.seatId) && action.action === 'fold')
+    }
+
+    expect(sawBotFold).toBe(true)
+  })
+
+  it('does not display an all-in raise as a fold', () => {
+    let state = service.startNewHand()
+    expect(state.actingSeatId).toBe('user')
+    const raise = state.legalActions.find((action) => action.kind === 'raise')
+    expect(raise?.max).toBeGreaterThan(0)
+
+    state = service.submitAction({
+      seat: 'user',
+      turnToken: state.turnToken,
+      action: 'raise',
+      amount: raise?.max
+    })
+
+    const user = state.seats.find((seat) => seat.seatId === 'user')
+    expect(state.publicActions.at(-1)?.action).toBe('raise')
+    expect(user?.stack).toBe(0)
+    expect(user?.bet).toBeGreaterThan(0)
+    expect(user?.isFolded).toBe(false)
+    expect(user?.status).not.toBe('folded')
   })
 
   it('fast-forwards after the user folds and records accounting/review data', () => {

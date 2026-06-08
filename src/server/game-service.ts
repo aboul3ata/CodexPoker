@@ -92,6 +92,7 @@ type AgentActionProfile = {
   checkBias: number
   callStackFraction: number
   looseCallStackFraction: number
+  foldBias: number
   raiseBias: number
   betBias: number
   pressureLimit: number
@@ -99,58 +100,64 @@ type AgentActionProfile = {
 }
 
 const defaultActionProfile: AgentActionProfile = {
-  checkBias: 0.76,
-  callStackFraction: 0.08,
-  looseCallStackFraction: 0.14,
-  raiseBias: 0.18,
-  betBias: 0.22,
+  checkBias: 0.8,
+  callStackFraction: 0.055,
+  looseCallStackFraction: 0.095,
+  foldBias: 0.42,
+  raiseBias: 0.14,
+  betBias: 0.18,
   pressureLimit: 2,
   wagerFraction: 0.05
 }
 
 const actionProfiles: Partial<Record<SeatId, AgentActionProfile>> = {
   uplift: {
-    checkBias: 0.68,
-    callStackFraction: 0.1,
-    looseCallStackFraction: 0.16,
-    raiseBias: 0.22,
-    betBias: 0.26,
+    checkBias: 0.72,
+    callStackFraction: 0.075,
+    looseCallStackFraction: 0.12,
+    foldBias: 0.32,
+    raiseBias: 0.2,
+    betBias: 0.24,
     pressureLimit: 2,
     wagerFraction: 0.08
   },
   pip: {
     checkBias: 0.9,
-    callStackFraction: 0.12,
-    looseCallStackFraction: 0.2,
-    raiseBias: 0.04,
-    betBias: 0.08,
+    callStackFraction: 0.08,
+    looseCallStackFraction: 0.13,
+    foldBias: 0.34,
+    raiseBias: 0.03,
+    betBias: 0.06,
     pressureLimit: 1,
     wagerFraction: 0.02
   },
   nova: {
-    checkBias: 0.62,
-    callStackFraction: 0.08,
-    looseCallStackFraction: 0.13,
-    raiseBias: 0.28,
-    betBias: 0.34,
-    pressureLimit: 3,
+    checkBias: 0.66,
+    callStackFraction: 0.055,
+    looseCallStackFraction: 0.09,
+    foldBias: 0.44,
+    raiseBias: 0.25,
+    betBias: 0.3,
+    pressureLimit: 2,
     wagerFraction: 0.12
   },
   clio: {
-    checkBias: 0.84,
-    callStackFraction: 0.07,
-    looseCallStackFraction: 0.11,
-    raiseBias: 0.1,
-    betBias: 0.16,
+    checkBias: 0.88,
+    callStackFraction: 0.045,
+    looseCallStackFraction: 0.075,
+    foldBias: 0.52,
+    raiseBias: 0.08,
+    betBias: 0.12,
     pressureLimit: 2,
     wagerFraction: 0.06
   },
   atlas: {
-    checkBias: 0.55,
-    callStackFraction: 0.1,
-    looseCallStackFraction: 0.16,
-    raiseBias: 0.34,
-    betBias: 0.4,
+    checkBias: 0.58,
+    callStackFraction: 0.06,
+    looseCallStackFraction: 0.1,
+    foldBias: 0.38,
+    raiseBias: 0.3,
+    betBias: 0.35,
     pressureLimit: 3,
     wagerFraction: 0.18
   }
@@ -446,11 +453,14 @@ export class GameService {
     const canCall = legal.some((item) => item.kind === 'call')
     const raise = legal.find((item) => item.kind === 'raise')
     const bet = legal.find((item) => item.kind === 'bet')
+    const canFold = legal.some((item) => item.kind === 'fold')
     const pressure = this.publicActions.filter((action) => action.street === this.getStreet()).length
     const stack = seat?.stack ?? 0
     const strength = this.getHoldingStrength(seatId)
-    const callCeiling = Math.max(100, stack * (profile.callStackFraction + strength * 0.16))
-    const looseCallCeiling = Math.max(200, stack * (profile.looseCallStackFraction + strength * 0.2))
+    const callCeiling = Math.max(100, stack * (profile.callStackFraction + strength * 0.1))
+    const looseCallCeiling = Math.max(200, stack * (profile.looseCallStackFraction + strength * 0.13))
+    const pressureRatio = stack > 0 ? toCall / stack : 1
+    const foldChance = Math.min(0.88, profile.foldBias + pressureRatio * 2.2 + pressure * 0.04 - strength * 0.22)
     const raiseChance = Math.min(0.72, profile.raiseBias * (0.45 + strength * 1.45))
     const betChance = Math.min(0.78, profile.betBias * (0.45 + strength * 1.55))
 
@@ -464,13 +474,15 @@ export class GameService {
     if (raise && strength >= 0.76 && pressure <= profile.pressureLimit && Math.random() < raiseChance) {
       return { action: 'raise', amount: this.chooseProfileWager(raise, profile) }
     }
-    if (canCall && (toCall <= callCeiling || strength >= 0.7)) return { action: 'call' }
+    if (canCall && (toCall <= callCeiling || strength >= 0.74)) return { action: 'call' }
+    if (canFold && canCall && toCall > looseCallCeiling && strength < 0.72) return { action: 'fold' }
+    if (canFold && canCall && toCall > callCeiling && strength < 0.6 && Math.random() < foldChance) return { action: 'fold' }
     if (raise && strength >= 0.62 && pressure <= profile.pressureLimit && Math.random() < raiseChance) {
       return { action: 'raise', amount: this.chooseProfileWager(raise, profile) }
     }
     if (bet && strength >= 0.6 && Math.random() < betChance) return { action: 'bet', amount: this.chooseProfileWager(bet, profile) }
-    if (canCall && toCall <= looseCallCeiling) return { action: 'call' }
-    if (legal.some((item) => item.kind === 'fold')) return { action: 'fold' }
+    if (canCall && toCall <= looseCallCeiling && (strength >= 0.42 || Math.random() > profile.foldBias)) return { action: 'call' }
+    if (canFold) return { action: 'fold' }
     return { action: canCheck ? 'check' : 'call' }
   }
 
@@ -611,7 +623,8 @@ export class GameService {
     return seatOrder.map((seatId) => {
       const index = seatMeta[seatId].seatIndex
       const seat = seats[index]
-      const isFolded = Boolean(this.table.isHandInProgress() && handPlayers[index] === null)
+      const foldedByAction = this.publicActions.some((action) => action.seatId === seatId && action.action === 'fold')
+      const isFolded = Boolean(this.table.isHandInProgress() && handPlayers[index] === null && foldedByAction)
       const isWinner = winningSeatIds.includes(seatId)
       const cards = seatId === 'user' && !this.review ? holes[index] ?? undefined : undefined
       const revealedCards = this.review ? holes[index] ?? undefined : undefined
