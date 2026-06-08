@@ -168,6 +168,9 @@ describe('safe CLI state output', () => {
     expect(output.codexChat.tableTalkCue).toContain('Wait for Ali to act')
     expect(output.codexChat.publicTableStory).toContain('last action: Atlas check on flop')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('Do not use fallback')
+    expect(output.suggestedCommands).toEqual({
+      banter: 'npm run --silent game:banter'
+    })
   })
 
   it('guides Uplift turns toward chat banter without exposing private cards in the public guide', () => {
@@ -188,6 +191,7 @@ describe('safe CLI state output', () => {
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('game:turn')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('game:play')
     expect(output.suggestedCommands).toEqual({
+      banter: 'npm run --silent game:banter',
       turn: 'npm run --silent game:turn',
       play: 'npm run --silent game:play'
     })

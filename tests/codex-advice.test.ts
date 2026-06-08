@@ -18,10 +18,24 @@ describe('Codex command advice', () => {
   it('sends Uplift through private turn context instead of public card-blind action advice', () => {
     const commands = buildCodexCommands(baseState)
 
+    expect(commands.banter).toBe('npm run --silent game:banter')
     expect(commands.turn).toBe('npm run --silent game:turn')
     expect(commands.play).toBe('npm run --silent game:play')
     expect(commands).not.toHaveProperty('act')
     expect(commands).not.toHaveProperty('say')
+  })
+
+  it('offers only public banter while Ali acts in the preview', () => {
+    const commands = buildCodexCommands({
+      ...baseState,
+      actingSeatId: 'user'
+    })
+
+    expect(commands).toEqual({
+      banter: 'npm run --silent game:banter'
+    })
+    expect(commands).not.toHaveProperty('play')
+    expect(commands).not.toHaveProperty('act')
   })
 
   it('offers the review command after completed hands', () => {

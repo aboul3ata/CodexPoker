@@ -21,15 +21,17 @@ Codex can inspect the live preview at any time with:
 
 ```bash
 npm run game:state
+npm run game:banter
 ```
 
 That prints the current hand, recent public action trail, a `codexChat` guide for how Uplift should speak in this chat, and the safest next Codex command for the current phase. On Uplift's active turn it includes a `privateTurn` reference to `data/bridge/current-turn.json`, but the default state output does not print Uplift's hole cards.
 `game:state` intentionally does not suggest a ready `game:act` command for Uplift turns; run `game:turn` first so the decision uses the private hand context.
+`game:banter` prints one public-safe Uplift table line for this chat. It never reads private turn files and never submits actions.
 
 The intended loop is:
 
 1. Run `npm run --silent game:state`.
-2. Use `codexChat.suggestedTableLine`, `codexChat.tableTalkCue`, and `codexChat.publicTableStory` to banter in this Codex chat.
+2. Use `codexChat.suggestedTableLine`, or run `npm run --silent game:banter`, to banter in this Codex chat.
 3. If `privateTurn` is present, run `npm run --silent game:turn` for the private Uplift decision context, or `npm run --silent game:play` to submit the private recommendation.
 4. If you inspected with `game:turn`, submit only Uplift's move with `npm run --silent game:act -- ...`.
 
@@ -77,6 +79,7 @@ npm run game:next
 
 - `npm run dev`: start Fastify and Vite together.
 - `npm run game:state`: inspect the live preview and get the next Codex command.
+- `npm run game:banter`: generate one public-safe Uplift table-talk line for Codex chat.
 - `npm run game:turn`: inspect Uplift's private decision packet only when Codex is to act.
 - `npm run game:play`: submit Uplift's private recommended action and return safe post-action state.
 - `npm run game:act`: submit an Uplift action from Codex.

@@ -1,6 +1,7 @@
 import type { GameSnapshot } from './contracts'
 
 export type CodexCommandAdvice = {
+  banter?: string
   turn?: string
   play?: string
   next?: string
@@ -15,9 +16,16 @@ export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'p
     }
   }
 
+  if (state.actingSeatId === 'user') {
+    return {
+      banter: 'npm run --silent game:banter'
+    }
+  }
+
   if (state.actingSeatId !== 'uplift') return {}
 
   return {
+    banter: 'npm run --silent game:banter',
     turn: 'npm run --silent game:turn',
     play: 'npm run --silent game:play'
   }
