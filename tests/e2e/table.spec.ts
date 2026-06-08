@@ -7,6 +7,7 @@ test('renders the playable CodexPoker table', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'Poker table' })).toBeVisible()
   await expect(page.getByText(/Table talk/)).toHaveCount(0)
   await expect(page.getByLabel('Banter')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
   await expect(page.getByText('Uplift review', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Balance history' })).toBeVisible()
 })
@@ -30,6 +31,7 @@ test('supports a legal user action from the preview', async ({ page, request }) 
   await actionButton.click()
 
   await expect(page.getByText(/Codex to act|Your turn|Review ready|Bots moving/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
 })
 
 test('lets the user size a bet or raise from the preview', async ({ page, request }) => {

@@ -28,9 +28,9 @@ Use a rounded display face for headings and a friendly readable sans for UI. The
 ## Components
 
 - Table scene: central gameplay canvas with a stable pot/board area and visible current-turn ownership.
-- Seat: avatar, cute name, stack, provider/model subtitle, and fallback/health badge.
+- Seat: avatar, cute name, stack, provider/model subtitle, and current/folded/winner status.
 - Action footer: legal poker actions only; disabled states include reasons.
-- Chat lane: short table talk tied to seats, not a transcript wall.
+- Codex chat bridge: Uplift table talk and review back-and-forth happen in the Codex chat, not in the preview UI.
 - Review scene: result delta, one Uplift lesson, decision timeline, and `Next hand`.
 - Settings drawer: provider/seat setup and accessibility switches.
 

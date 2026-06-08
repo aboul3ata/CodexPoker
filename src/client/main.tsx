@@ -97,7 +97,6 @@ function App() {
             isUpliftTurn={isUpliftTurn}
             canFastForward={canFastForward}
             onAction={submitAction}
-            onFallback={() => post('/api/uplift/fallback')}
             onFastForward={() => post('/api/fast-forward')}
             onNextHand={() => post('/api/new-hand')}
           />
@@ -206,7 +205,6 @@ function ActionFooter({
   isUpliftTurn,
   canFastForward,
   onAction,
-  onFallback,
   onFastForward,
   onNextHand
 }: {
@@ -215,7 +213,6 @@ function ActionFooter({
   isUpliftTurn: boolean
   canFastForward: boolean
   onAction: (action: LegalAction, amount?: number) => void
-  onFallback: () => void
   onFastForward: () => void
   onNextHand: () => void
 }) {
@@ -237,9 +234,8 @@ function ActionFooter({
         <>
           <div className="waiting-copy">
             <Bot size={18} />
-            Uplift is waiting for Codex.
+            Uplift is thinking.
           </div>
-          <button className="secondary-action" onClick={onFallback}>Use fallback move</button>
         </>
       ) : canFastForward ? (
         <button className="primary-action" onClick={onFastForward}>
