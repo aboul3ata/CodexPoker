@@ -32,7 +32,10 @@ describe('Codex command advice', () => {
       legalActions: []
     })
 
-    expect(commands).toEqual({ review: 'npm run --silent game:review' })
+    expect(commands).toEqual({
+      review: 'npm run --silent game:review',
+      next: 'npm run --silent game:next'
+    })
   })
 
   it('summarizes the next table state for Codex', () => {

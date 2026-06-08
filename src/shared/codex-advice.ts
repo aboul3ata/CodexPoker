@@ -2,6 +2,7 @@ import type { ActionKind, GameSnapshot, LegalAction } from './contracts'
 
 export type CodexCommandAdvice = {
   act?: string
+  next?: string
   review?: string
 }
 
@@ -18,7 +19,10 @@ export function chooseCodexAction(actions: LegalAction[]): { kind: ActionKind; a
 
 export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'phase' | 'legalActions' | 'turnToken'>): CodexCommandAdvice {
   if (state.phase === 'hand-complete') {
-    return { review: 'npm run --silent game:review' }
+    return {
+      review: 'npm run --silent game:review',
+      next: 'npm run --silent game:next'
+    }
   }
 
   if (state.actingSeatId !== 'uplift') return {}

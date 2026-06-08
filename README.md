@@ -59,11 +59,20 @@ npm run game:review
 
 Use that packet to ask in the Codex chat whether the player wants the review, then discuss the hand there.
 
+If Ali wants to skip the review and keep playing, Codex can start the next hand after a completed hand with:
+
+```bash
+npm run game:next
+```
+
+`game:next` refuses to interrupt an active hand; live decisions stay in the preview and Uplift bridge commands.
+
 ## Scripts
 
 - `npm run dev`: start Fastify and Vite together.
 - `npm run game:state`: inspect the live preview and get the next Codex command.
 - `npm run game:act`: submit an Uplift action from Codex.
+- `npm run game:next`: start the next hand after the completed-hand review offer.
 - `npm run game:review`: read the latest completed hand for a Codex chat review.
 - `npm test`: run unit and integration tests.
 - `npm run test:e2e`: run Playwright browser tests.

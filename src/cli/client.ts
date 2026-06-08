@@ -23,12 +23,13 @@ function getDataDir() {
     : path.resolve('data')
 }
 
-export async function postApi(pathname: string, body: unknown): Promise<ApiResult> {
-  const response = await fetch(`${getServerUrl()}${pathname}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body)
-  })
+export async function postApi(pathname: string, body?: unknown): Promise<ApiResult> {
+  const init: RequestInit = { method: 'POST' }
+  if (body !== undefined) {
+    init.headers = { 'content-type': 'application/json' }
+    init.body = JSON.stringify(body)
+  }
+  const response = await fetch(`${getServerUrl()}${pathname}`, init)
   const payload = (await response.json()) as ApiResult
   if (!response.ok) {
     const error = new Error(payload.message ?? `HTTP ${response.status}`) as Error & { code?: string; status?: number }
