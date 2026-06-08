@@ -585,6 +585,9 @@ input:focus-visible {
 
 .action-footer {
   min-height: 78px;
+  position: sticky;
+  bottom: 12px;
+  z-index: 12;
   border-radius: 20px;
   background: var(--paper);
   padding: 12px;
@@ -610,6 +613,88 @@ input:focus-visible {
 
 .primary-action.wide {
   width: 100%;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.bet-panel {
+  width: min(560px, 100%);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 12px;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.bet-panel-head {
+  display: grid;
+  gap: 1px;
+}
+
+.bet-panel-head span,
+.amount-row label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.bet-panel-head strong {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.bet-presets {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset {
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 0 11px;
+  background: white;
+  border-color: rgba(23, 50, 59, .2);
+  box-shadow: 0 3px 0 rgba(23, 50, 59, .08);
+  font-size: 12px;
+}
+
+.preset.active {
+  background: var(--learn);
+}
+
+.amount-row {
+  display: grid;
+  grid-template-columns: auto minmax(112px, 148px);
+  align-items: center;
+  gap: 8px;
+}
+
+.amount-row input {
+  width: 100%;
+  min-height: 40px;
+  border: 2px solid rgba(23, 50, 59, .18);
+  border-radius: 12px;
+  color: var(--ink);
+  font-weight: 950;
+  padding: 0 10px;
+  background: white;
+}
+
+.amount-slider {
+  width: 100%;
+  accent-color: var(--sky);
+}
+
+.commit-wager {
+  grid-column: 2;
 }
 
 .waiting-copy {
@@ -885,7 +970,24 @@ input:focus-visible {
   }
 
   .action-footer {
-    position: static;
+    bottom: 8px;
+  }
+
+  .bet-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .bet-presets,
+  .commit-wager {
+    justify-self: stretch;
+  }
+
+  .commit-wager {
+    grid-column: auto;
+  }
+
+  .amount-row {
+    grid-template-columns: 1fr minmax(104px, 132px);
   }
 
   .playing-card {

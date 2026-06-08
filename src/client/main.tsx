@@ -50,13 +50,13 @@ function App() {
     setState(payload.state)
   }
 
-  async function submitAction(action: LegalAction) {
+  async function submitAction(action: LegalAction, amount?: number) {
     if (!state) return
     await post('/api/action', {
       seat: 'user',
       turnToken: state.turnToken,
       action: action.kind,
-      amount: action.kind === 'bet' || action.kind === 'raise' ? action.min : undefined
+      amount: action.kind === 'bet' || action.kind === 'raise' ? amount ?? action.min : undefined
     })
   }
 
@@ -285,7 +285,7 @@ function ActionFooter({
   isUserTurn: boolean
   isUpliftTurn: boolean
   canFastForward: boolean
-  onAction: (action: LegalAction) => void
+  onAction: (action: LegalAction, amount?: number) => void
   onFallback: () => void
   onFastForward: () => void
   onNextHand: () => void
@@ -303,15 +303,7 @@ function ActionFooter({
   return (
     <footer className="action-footer">
       {isUserTurn ? (
-        state.legalActions.map((action) => (
-          <button
-            key={action.kind}
-            className={action.kind === 'raise' || action.kind === 'bet' ? 'primary-action' : 'secondary-action'}
-            onClick={() => onAction(action)}
-          >
-            {actionLabel(action)}
-          </button>
-        ))
+        <UserActionPanel state={state} onAction={onAction} />
       ) : isUpliftTurn ? (
         <>
           <div className="waiting-copy">
@@ -331,6 +323,89 @@ function ActionFooter({
         <button className="secondary-action" onClick={onFastForward}>Fast-fold result</button>
       ) : null}
     </footer>
+  )
+}
+
+function UserActionPanel({
+  state,
+  onAction
+}: {
+  state: GameSnapshot
+  onAction: (action: LegalAction, amount?: number) => void
+}) {
+  const passiveActions = state.legalActions.filter((action) => action.kind !== 'bet' && action.kind !== 'raise')
+  const wagerAction = state.legalActions.find((action) => action.kind === 'bet' || action.kind === 'raise')
+  const min = wagerAction?.min ?? 0
+  const max = wagerAction?.max ?? min
+  const [amount, setAmount] = useState(min)
+
+  useEffect(() => {
+    setAmount((current) => clampAmount(current || min, min, max))
+  }, [min, max, wagerAction?.kind])
+
+  const presets = wagerAction ? buildAmountPresets(wagerAction, state.pot) : []
+  const clampedAmount = wagerAction ? clampAmount(amount, min, max) : amount
+
+  return (
+    <>
+      <div className="quick-actions" aria-label="Quick actions">
+        {passiveActions.map((action) => (
+          <button
+            key={action.kind}
+            className="secondary-action"
+            onClick={() => onAction(action)}
+          >
+            {actionLabel(action)}
+          </button>
+        ))}
+      </div>
+      {wagerAction ? (
+        <section className="bet-panel" aria-label="Wager controls">
+          <div className="bet-panel-head">
+            <span>{wagerAction.kind === 'raise' ? 'Raise to' : 'Bet'}</span>
+            <strong>{formatChips(clampedAmount)}</strong>
+          </div>
+          <div className="bet-presets" aria-label="Bet presets">
+            {presets.map((preset) => (
+              <button
+                className={preset.amount === clampedAmount ? 'preset active' : 'preset'}
+                key={`${preset.label}-${preset.amount}`}
+                onClick={() => setAmount(preset.amount)}
+                type="button"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <div className="amount-row">
+            <label htmlFor="bet-amount">{wagerAction.kind === 'raise' ? 'Raise amount' : 'Bet amount'}</label>
+            <input
+              id="bet-amount"
+              inputMode="numeric"
+              max={max}
+              min={min}
+              onChange={(event) => setAmount(clampAmount(Number(event.target.value), min, max))}
+              step={50}
+              type="number"
+              value={clampedAmount}
+            />
+          </div>
+          <input
+            aria-label={`${capitalize(wagerAction.kind)} slider`}
+            className="amount-slider"
+            max={max}
+            min={min}
+            onChange={(event) => setAmount(clampAmount(Number(event.target.value), min, max))}
+            step={50}
+            type="range"
+            value={clampedAmount}
+          />
+          <button className="primary-action commit-wager" onClick={() => onAction(wagerAction, clampedAmount)}>
+            {wagerAction.kind === 'raise' ? 'Raise to' : 'Bet'} {formatChips(clampedAmount)}
+          </button>
+        </section>
+      ) : null}
+    </>
   )
 }
 
@@ -440,6 +515,38 @@ function actionLabel(action: LegalAction) {
   if (action.kind === 'bet') return `Bet ${formatChips(action.min ?? 0)}`
   if (action.kind === 'raise') return `Raise to ${formatChips(action.min ?? 0)}`
   return action.kind[0].toUpperCase() + action.kind.slice(1)
+}
+
+function buildAmountPresets(action: LegalAction, pot: number) {
+  const min = action.min ?? 0
+  const max = action.max ?? min
+  const rawPresets = [
+    { label: 'Min', amount: min },
+    { label: 'Half pot', amount: roundToChip(pot / 2) },
+    { label: 'Pot', amount: roundToChip(pot) },
+    { label: 'All in', amount: max }
+  ]
+  const seen = new Set<number>()
+  return rawPresets
+    .map((preset) => ({ ...preset, amount: clampAmount(preset.amount, min, max) }))
+    .filter((preset) => {
+      if (seen.has(preset.amount)) return false
+      seen.add(preset.amount)
+      return true
+    })
+}
+
+function clampAmount(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min
+  return Math.max(min, Math.min(max, Math.round(value / 50) * 50))
+}
+
+function roundToChip(value: number) {
+  return Math.max(0, Math.round(value / 50) * 50)
+}
+
+function capitalize(value: string) {
+  return value[0].toUpperCase() + value.slice(1)
 }
 
 function formatChips(value: number) {

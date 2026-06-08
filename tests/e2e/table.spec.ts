@@ -27,6 +27,32 @@ test('supports table talk and a legal user action', async ({ page }) => {
   await expect(page.getByText(/Codex to act|Your turn|Review ready|Bots moving/)).toBeVisible()
 })
 
+test('lets the user size a bet or raise from the preview', async ({ page, request }) => {
+  await page.goto('/')
+  let state = (await (await request.post('/api/new-hand')).json()).state
+
+  for (let guard = 0; state.actingSeatId !== 'user' && guard < 4; guard += 1) {
+    if (state.actingSeatId !== 'uplift') break
+    state = (await (await request.post('/api/uplift/fallback')).json()).state
+  }
+
+  expect(state.actingSeatId).toBe('user')
+  const wager = state.legalActions.find((action: { kind: string }) => action.kind === 'bet' || action.kind === 'raise')
+  expect(wager).toBeTruthy()
+  const amount = Math.min(wager.max, wager.min + 100)
+  const fieldName = wager.kind === 'raise' ? 'Raise amount' : 'Bet amount'
+
+  await page.reload()
+  await page.getByLabel(fieldName).fill(String(amount))
+  await page.getByRole('button', { name: new RegExp(`${wager.kind === 'raise' ? 'Raise to' : 'Bet'} ${amount.toLocaleString('en-US')}`) }).click()
+
+  const nextState = (await (await request.get('/api/state')).json()).state
+  expect(nextState.publicActions.some((action: { seatId: string; action: string; amount?: number }) =>
+    action.seatId === 'user' && action.action === wager.kind && action.amount === amount
+  )).toBe(true)
+  await expect(page.getByText(/Codex to act|Your turn|Review ready|Bots moving/)).toBeVisible()
+})
+
 test('keeps the table usable on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
