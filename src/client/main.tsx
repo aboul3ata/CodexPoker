@@ -509,6 +509,7 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
           <h2>{review.winningHandName}</h2>
           <p>{review.lesson}</p>
           <button className="primary-action wide" onClick={() => onNextHand()} type="button">Next hand</button>
+          <CodexReviewPrompt />
           <div className="timeline">
             {review.publicActions.slice(-8).map((action) => (
               <div className={action.seatId === 'user' ? 'hot' : ''} key={action.seq}>
@@ -527,6 +528,22 @@ function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: (
       )}
       <StackTrail history={state.history} bankroll={state.bankroll} rating={state.rating} />
     </aside>
+  )
+}
+
+function CodexReviewPrompt() {
+  return (
+    <section className="codex-review-card" aria-label="Codex review loop">
+      <div className="review-loop-avatar">
+        <img src={avatarBySeat.uplift} alt="" />
+      </div>
+      <div className="review-loop-copy">
+        <span>Chat review</span>
+        <strong>Ask from Codex.</strong>
+        <p>Use the loop guide here, then choose review or next hand.</p>
+      </div>
+      <code>npm run --silent game:codex</code>
+    </section>
   )
 }
 

@@ -164,6 +164,10 @@ test('offers a Codex review command after a completed hand', async ({ page, requ
   expect(reviewNextHandBox?.y).toBeLessThan(viewport?.height ?? 900)
   await expect(page.getByText(state.review.winningHandName).first()).toBeVisible()
   await expect(page.getByText(state.review.lesson).first()).toBeVisible()
+  const codexReview = page.getByRole('region', { name: 'Codex review loop' })
+  await expect(codexReview).toBeVisible()
+  await expect(codexReview.getByText('Ask from Codex.')).toBeVisible()
+  await expect(codexReview.getByText('npm run --silent game:codex')).toBeVisible()
   await expect(page.getByText('Review packet is ready')).toHaveCount(0)
   await expect(page.getByText('npm run --silent game:review')).toHaveCount(0)
   if (state.board.length > 0) {
