@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Bot, ChevronRight, MessageCircle, RotateCcw, Send, Sparkles, Zap } from 'lucide-react'
-import type { ActionKind, Card, GameSnapshot, HandHistoryPoint, LegalAction, SeatId, SeatView } from '../shared/contracts'
+import { buildCodexCommands } from '../shared/codex-advice'
+import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
 const avatarBySeat: Record<SeatId, string> = {
@@ -148,13 +149,7 @@ function ChatLane({
   setDraft: (value: string) => void
   onSend: (event: React.FormEvent) => void
 }) {
-  const codexCommand = useMemo(() => {
-    if (state.actingSeatId !== 'uplift') return null
-    const action = chooseCodexAction(state.legalActions)
-    const amountArg = action.amount ? ` --amount ${action.amount}` : ''
-    return `npm run --silent game:act -- --seat uplift --turn-token ${state.turnToken} --action ${action.kind}${amountArg}`
-  }, [state])
-  const reviewCommand = state.phase === 'hand-complete' ? 'npm run --silent game:review -- --post' : null
+  const codexCommands = useMemo(() => buildCodexCommands(state), [state])
 
   return (
     <aside className="chat-lane" aria-label="Table talk">
@@ -170,17 +165,17 @@ function ChatLane({
           </article>
         ))}
       </div>
-      {codexCommand ? (
+      {codexCommands.act ? (
         <div className="codex-card">
           <span>Codex turn packet is ready</span>
-          <code>{codexCommand}</code>
-          <code>{`npm run --silent game:say -- --seat uplift --turn-token ${state.turnToken} --message "I am studying your betting story."`}</code>
+          <code>{codexCommands.act}</code>
+          {codexCommands.say ? <code>{codexCommands.say}</code> : null}
         </div>
       ) : null}
-      {reviewCommand ? (
+      {codexCommands.review ? (
         <div className="codex-card review-card">
           <span>Review packet is ready</span>
-          <code>{reviewCommand}</code>
+          <code>{codexCommands.review}</code>
           <small>Posts Uplift's hand review back into this preview.</small>
         </div>
       ) : null}
@@ -471,17 +466,6 @@ function bridgeLabel(status: GameSnapshot['bridgeStatus']) {
     'user-to-act': 'Your turn',
     'hand-complete': 'Review ready'
   }[status]
-}
-
-function chooseCodexAction(actions: LegalAction[]): { kind: ActionKind; amount?: number } {
-  const check = actions.find((action) => action.kind === 'check')
-  if (check) return { kind: 'check' }
-  const call = actions.find((action) => action.kind === 'call')
-  if (call && (call.toCall ?? 0) <= 200) return { kind: 'call' }
-  const raise = actions.find((action) => action.kind === 'raise')
-  if (raise && raise.min && raise.min <= 300) return { kind: 'raise', amount: raise.min }
-  const fold = actions.find((action) => action.kind === 'fold')
-  return { kind: fold?.kind ?? actions[0]?.kind ?? 'fold' }
 }
 
 function seatName(state: GameSnapshot, seatId: SeatId) {

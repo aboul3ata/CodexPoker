@@ -9,6 +9,7 @@
     "dev:server": "tsx watch src/server/index.ts",
     "dev:client": "vite --host 127.0.0.1",
     "server": "tsx src/server/index.ts",
+    "game:state": "tsx src/cli/game-state.ts",
     "game:act": "tsx src/cli/game-act.ts",
     "game:say": "tsx src/cli/game-say.ts",
     "game:review": "tsx src/cli/game-review.ts",

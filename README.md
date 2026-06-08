@@ -15,6 +15,14 @@ Open the preview at `http://127.0.0.1:5173`.
 
 ## Codex Bridge
 
+Codex can inspect the live preview at any time with:
+
+```bash
+npm run game:state
+```
+
+That prints the current hand, recent public action trail, recent table talk, and the safest next Codex command for the current phase.
+
 When Uplift is to act, the server writes:
 
 - `data/bridge/current-turn.json`
@@ -51,6 +59,7 @@ npm run game:review -- --post
 ## Scripts
 
 - `npm run dev`: start Fastify and Vite together.
+- `npm run game:state`: inspect the live preview and get the next Codex command.
 - `npm run game:act`: submit an Uplift action from Codex/chat.
 - `npm run game:say`: add Uplift table talk.
 - `npm run game:review`: read the latest completed hand and optionally post Uplift's review.
