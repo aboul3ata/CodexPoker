@@ -7,6 +7,10 @@ import { getBridgeDir } from '../server/paths'
 export function buildSafeStateOutput(state: GameSnapshot) {
   return {
     ok: true,
+    protocol: {
+      tableTalk: 'Use this Codex chat for Uplift table talk and hand-review back-and-forth; the preview is only the poker table.',
+      privateInfo: 'codexTurn.holeCards are private to Uplift/Codex and must not be revealed before showdown.'
+    },
     summary: describeCodexNextStep(state),
     suggestedCommands: buildCodexCommands(state),
     codexTurn: getMatchingCurrentTurn(state),
@@ -34,7 +38,6 @@ export function buildSafeStateOutput(state: GameSnapshot) {
         isFolded: seat.isFolded
       })),
       recentActions: state.publicActions.slice(-10),
-      recentChat: state.chat.slice(-6),
       review: state.review
     }
   }

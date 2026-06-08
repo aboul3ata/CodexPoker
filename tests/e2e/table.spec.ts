@@ -5,25 +5,29 @@ test('renders the playable CodexPoker table', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'CodexPoker' })).toBeVisible()
   await expect(page.getByLabel('Session status').getByText('Elo', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Poker table' })).toBeVisible()
-  await expect(page.getByText(/Table talk/)).toBeVisible()
+  await expect(page.getByText(/Table talk/)).toHaveCount(0)
+  await expect(page.getByLabel('Banter')).toHaveCount(0)
   await expect(page.getByText('Uplift review', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Balance history' })).toBeVisible()
 })
 
-test('supports table talk and a legal user action', async ({ page }) => {
+test('supports a legal user action from the preview', async ({ page, request }) => {
   await page.goto('/')
-  await page.getByLabel('Banter').fill('I am absolutely not bluffing.')
-  await page.getByRole('button', { name: 'Send table talk' }).click()
-  await expect(page.getByText('I am absolutely not bluffing.').first()).toBeVisible()
+  let state = (await (await request.post('/api/new-hand')).json()).state
 
-  const actionButton = page.getByRole('button', { name: /Call|Check|Fold|Raise|Bet/ }).first()
-  const fallbackButton = page.getByRole('button', { name: /Use fallback move|Fast-fold result|Simulate to result|Next hand/ }).first()
-  if (await actionButton.isVisible()) {
-    await actionButton.click()
-  } else {
-    await expect(fallbackButton).toBeVisible()
-    await fallbackButton.click()
+  for (let guard = 0; state.actingSeatId !== 'user' && guard < 6; guard += 1) {
+    if (state.actingSeatId === 'uplift') {
+      state = (await (await request.post('/api/uplift/fallback')).json()).state
+      continue
+    }
+    state = (await (await request.post('/api/new-hand')).json()).state
   }
+
+  expect(state.actingSeatId).toBe('user')
+  await page.reload()
+  const actionButton = page.getByRole('button', { name: /Call|Check|Fold|Raise|Bet/ }).first()
+  await expect(actionButton).toBeVisible()
+  await actionButton.click()
 
   await expect(page.getByText(/Codex to act|Your turn|Review ready|Bots moving/)).toBeVisible()
 })
@@ -96,8 +100,11 @@ test('offers a Codex review command after a completed hand', async ({ page, requ
   expect(state.board).toEqual(state.review.board)
   expect(state.pot).toBe(state.review.finalPot)
   await page.reload()
-  await expect(page.getByText('Review packet is ready')).toBeVisible()
-  await expect(page.getByText('npm run --silent game:review -- --post')).toBeVisible()
+  await expect(page.getByText('Uplift review', { exact: true })).toBeVisible()
+  await expect(page.getByText(state.review.winningHandName).first()).toBeVisible()
+  await expect(page.getByText(state.review.lesson).first()).toBeVisible()
+  await expect(page.getByText('Review packet is ready')).toHaveCount(0)
+  await expect(page.getByText('npm run --silent game:review')).toHaveCount(0)
   if (state.board.length > 0) {
     await expect(page.locator('.community-cards .playing-card.empty')).toHaveCount(5 - state.board.length)
   }

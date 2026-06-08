@@ -45,7 +45,7 @@ describe('review copy', () => {
     expect(brief).toContain('Lesson seed: Ask what story the raise is telling before paying.')
   })
 
-  it('builds a visible Uplift table-talk review message', () => {
+  it('builds a concise Uplift review invitation for Codex chat', () => {
     const message = buildReviewMessage(packet)
 
     expect(message).toContain('Tiny tuition')

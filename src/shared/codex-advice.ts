@@ -2,7 +2,6 @@ import type { ActionKind, GameSnapshot, LegalAction } from './contracts'
 
 export type CodexCommandAdvice = {
   act?: string
-  say?: string
   review?: string
 }
 
@@ -19,7 +18,7 @@ export function chooseCodexAction(actions: LegalAction[]): { kind: ActionKind; a
 
 export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'phase' | 'legalActions' | 'turnToken'>): CodexCommandAdvice {
   if (state.phase === 'hand-complete') {
-    return { review: 'npm run --silent game:review -- --post' }
+    return { review: 'npm run --silent game:review' }
   }
 
   if (state.actingSeatId !== 'uplift') return {}
@@ -27,14 +26,13 @@ export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'p
   const action = chooseCodexAction(state.legalActions)
   const amountArg = action.amount ? ` --amount ${action.amount}` : ''
   return {
-    act: `npm run --silent game:act -- --seat uplift --turn-token ${state.turnToken} --action ${action.kind}${amountArg}`,
-    say: `npm run --silent game:say -- --seat uplift --turn-token ${state.turnToken} --message "I am studying your betting story."`
+    act: `npm run --silent game:act -- --seat uplift --turn-token ${state.turnToken} --action ${action.kind}${amountArg}`
   }
 }
 
 export function describeCodexNextStep(state: Pick<GameSnapshot, 'actingSeatId' | 'phase' | 'bridgeStatus'>) {
-  if (state.phase === 'hand-complete') return 'Hand complete. Review the latest hand or start the next one.'
-  if (state.actingSeatId === 'uplift') return 'Uplift is waiting for Codex to act or banter.'
+  if (state.phase === 'hand-complete') return 'Hand complete. Ask Ali in this Codex chat whether they want a review or the next hand.'
+  if (state.actingSeatId === 'uplift') return 'Uplift is waiting for Codex to act.'
   if (state.actingSeatId === 'user') return 'Ali is to act in the preview.'
   if (state.bridgeStatus === 'local-bots-moving') return 'Local bots are moving.'
   return 'The table is between actions.'

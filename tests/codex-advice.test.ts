@@ -21,7 +21,7 @@ describe('Codex command advice', () => {
     const commands = buildCodexCommands(baseState)
     expect(commands.act).toContain('--seat uplift')
     expect(commands.act).toContain('--action call')
-    expect(commands.say).toContain('game:say')
+    expect(commands).not.toHaveProperty('say')
   })
 
   it('offers the review command after completed hands', () => {
@@ -32,7 +32,7 @@ describe('Codex command advice', () => {
       legalActions: []
     })
 
-    expect(commands).toEqual({ review: 'npm run --silent game:review -- --post' })
+    expect(commands).toEqual({ review: 'npm run --silent game:review' })
   })
 
   it('summarizes the next table state for Codex', () => {

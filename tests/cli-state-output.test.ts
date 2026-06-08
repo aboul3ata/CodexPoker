@@ -143,5 +143,8 @@ describe('safe CLI state output', () => {
     expect(serialized).not.toContain('spades')
     expect(serialized).not.toContain('clubs')
     expect(output.state.seats.every((seat) => !('cards' in seat))).toBe(true)
+    expect(output.protocol.tableTalk).toContain('Use this Codex chat')
+    expect(output.protocol.privateInfo).toContain('must not be revealed')
+    expect(output.state).not.toHaveProperty('recentChat')
   })
 })

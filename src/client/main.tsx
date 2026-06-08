@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Bot, ChevronRight, MessageCircle, RotateCcw, Send, Sparkles, Zap } from 'lucide-react'
-import { buildCodexCommands } from '../shared/codex-advice'
+import { Bot, ChevronRight, RotateCcw, Sparkles, Zap } from 'lucide-react'
 import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
@@ -17,7 +16,6 @@ const avatarBySeat: Record<SeatId, string> = {
 function App() {
   const [state, setState] = useState<GameSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [chatDraft, setChatDraft] = useState('')
 
   useEffect(() => {
     fetchState().then(setState).catch((err) => setError(err.message))
@@ -60,14 +58,6 @@ function App() {
     })
   }
 
-  async function sendChat(event: React.FormEvent) {
-    event.preventDefault()
-    const message = chatDraft.trim()
-    if (!message) return
-    setChatDraft('')
-    await post('/api/say', { seat: 'user', message })
-  }
-
   if (!state) {
     return (
       <main className="boot">
@@ -97,7 +87,6 @@ function App() {
       </section>
 
       <section className="play-layout">
-        <ChatLane state={state} draft={chatDraft} setDraft={setChatDraft} onSend={sendChat} />
         <section className="table-column" aria-label="Poker table">
           {error ? <div className="error-banner" role="alert">{error}</div> : null}
           {state.tableNotice ? <div className="table-notice">{state.tableNotice}</div> : null}
@@ -135,66 +124,6 @@ function Stat({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
-  )
-}
-
-function ChatLane({
-  state,
-  draft,
-  setDraft,
-  onSend
-}: {
-  state: GameSnapshot
-  draft: string
-  setDraft: (value: string) => void
-  onSend: (event: React.FormEvent) => void
-}) {
-  const codexCommands = useMemo(() => buildCodexCommands(state), [state])
-
-  return (
-    <aside className="chat-lane" aria-label="Table talk">
-      <div className="lane-title">
-        <MessageCircle size={18} />
-        <span>Table talk</span>
-      </div>
-      <div className="messages">
-        {state.chat.map((message) => (
-          <article className={`message ${message.seatId}`} key={message.id}>
-            <strong>{message.name}</strong>
-            <p>{message.message}</p>
-          </article>
-        ))}
-      </div>
-      {codexCommands.act ? (
-        <div className="codex-card">
-          <span>Codex turn packet is ready</span>
-          <code>{codexCommands.act}</code>
-          {codexCommands.say ? <code>{codexCommands.say}</code> : null}
-        </div>
-      ) : null}
-      {codexCommands.review ? (
-        <div className="codex-card review-card">
-          <span>Review packet is ready</span>
-          <code>{codexCommands.review}</code>
-          <small>Posts Uplift's hand review back into this preview.</small>
-        </div>
-      ) : null}
-      <form onSubmit={onSend} className="chat-form">
-        <label htmlFor="table-talk">Banter</label>
-        <div>
-          <input
-            id="table-talk"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder="Try to throw Uplift off..."
-            maxLength={220}
-          />
-          <button type="submit" aria-label="Send table talk">
-            <Send size={18} />
-          </button>
-        </div>
-      </form>
-    </aside>
   )
 }
 

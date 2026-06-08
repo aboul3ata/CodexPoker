@@ -90,7 +90,6 @@ input:focus-visible {
 .brand-lockup,
 .stat,
 .bridge-pill,
-.chat-lane,
 .review-panel,
 .action-footer,
 .error-banner {
@@ -183,12 +182,11 @@ input:focus-visible {
   max-width: 1500px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 300px minmax(520px, 1fr) 300px;
+  grid-template-columns: minmax(520px, 1fr) 300px;
   gap: 14px;
   align-items: start;
 }
 
-.chat-lane,
 .review-panel {
   min-height: 680px;
   border-radius: 22px;
@@ -204,95 +202,6 @@ input:focus-visible {
   margin-bottom: 12px;
 }
 
-.messages {
-  display: grid;
-  gap: 8px;
-  max-height: 398px;
-  overflow: auto;
-  padding-right: 4px;
-}
-
-.message {
-  border: 2px solid var(--line);
-  border-radius: 16px;
-  background: white;
-  padding: 9px;
-}
-
-.message.uplift {
-  background: var(--sky-soft);
-  border-color: rgba(32, 109, 255, .25);
-}
-
-.message.user {
-  background: #fff1cb;
-}
-
-.message strong,
-.message p {
-  margin: 0;
-}
-
-.message p {
-  color: var(--muted);
-  margin-top: 3px;
-  line-height: 1.35;
-}
-
-.codex-card {
-  margin-top: 12px;
-  background: #182f39;
-  color: white;
-  border-radius: 16px;
-  padding: 12px;
-  display: grid;
-  gap: 8px;
-}
-
-.codex-card code {
-  display: block;
-  color: #d8fff2;
-  font-size: 12px;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-}
-
-.codex-card small {
-  color: rgba(255, 255, 255, .72);
-  font-weight: 800;
-  line-height: 1.35;
-}
-
-.codex-card.review-card {
-  background: #2f7d54;
-}
-
-.chat-form {
-  margin-top: 12px;
-}
-
-.chat-form label {
-  display: block;
-  font-weight: 900;
-  margin-bottom: 6px;
-}
-
-.chat-form div {
-  display: grid;
-  grid-template-columns: 1fr 48px;
-  gap: 8px;
-}
-
-.chat-form input {
-  min-height: 48px;
-  border: 2px solid var(--line);
-  border-radius: 14px;
-  padding: 0 12px;
-  color: var(--ink);
-  background: white;
-}
-
-.chat-form button,
 .primary-action,
 .secondary-action {
   border: 2px solid rgba(23, 50, 59, .22);
@@ -302,7 +211,6 @@ input:focus-visible {
   box-shadow: 0 5px 0 rgba(23, 50, 59, .16);
 }
 
-.chat-form button,
 .primary-action {
   background: var(--sky);
   color: white;
@@ -912,17 +820,12 @@ input:focus-visible {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .chat-lane,
   .review-panel {
     min-height: auto;
   }
 
-  .chat-lane {
-    order: 2;
-  }
-
   .review-panel {
-    order: 3;
+    order: 2;
   }
 }
 
