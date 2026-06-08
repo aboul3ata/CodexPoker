@@ -80,7 +80,7 @@ input:focus-visible {
 
 .top-rail {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) auto auto auto;
+  grid-template-columns: minmax(260px, 1fr) auto auto auto auto;
   gap: 12px;
   align-items: stretch;
   margin: 0 auto 14px;
@@ -90,6 +90,8 @@ input:focus-visible {
 .brand-lockup,
 .stat,
 .bridge-pill,
+.lineup-toggle,
+.lineup-drawer,
 .review-panel,
 .action-footer,
 .error-banner {
@@ -178,6 +180,217 @@ input:focus-visible {
   background: #263f48;
 }
 
+.lineup-toggle,
+.icon-button {
+  border: 2px solid var(--line);
+  color: var(--ink);
+  font-weight: 950;
+  box-shadow: 0 5px 0 rgba(23, 50, 59, .09);
+  transition: box-shadow .14s ease-out, transform .14s ease-out;
+}
+
+.lineup-toggle {
+  min-width: 116px;
+  border-radius: 16px;
+  background: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.lineup-toggle.active {
+  background: var(--learn);
+}
+
+.icon-button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: white;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+}
+
+.lineup-drawer {
+  max-width: 1500px;
+  margin: 0 auto 14px;
+  border-radius: 22px;
+  background: #fff9ef;
+  padding: 14px;
+}
+
+.lineup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.lineup-head div {
+  display: grid;
+  gap: 2px;
+}
+
+.lineup-head span,
+.lineup-name span,
+.lineup-meta span,
+.lineup-settings span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.lineup-head strong {
+  font-family: "Fredoka", "Avenir Next", "Trebuchet MS", sans-serif;
+  font-size: 24px;
+  line-height: 1.05;
+}
+
+.lineup-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lineup-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 8px 10px;
+  min-height: 178px;
+  border: 2px solid rgba(23, 50, 59, .14);
+  border-radius: 16px;
+  background: white;
+  padding: 10px;
+  box-shadow: inset 0 -5px 0 rgba(23, 50, 59, .04);
+}
+
+.lineup-card.codex {
+  border-color: rgba(32, 109, 255, .28);
+  background: #f5f8ff;
+}
+
+.lineup-card.human {
+  border-color: rgba(242, 95, 92, .28);
+  background: #fff7f5;
+}
+
+.lineup-card.to-act {
+  box-shadow: 0 0 0 4px rgba(249, 216, 74, .34), inset 0 -5px 0 rgba(23, 50, 59, .04);
+}
+
+.lineup-card img {
+  width: 54px;
+  height: 54px;
+}
+
+.lineup-copy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.lineup-name {
+  display: grid;
+  gap: 2px;
+}
+
+.lineup-name strong {
+  font-size: 17px;
+  line-height: 1.05;
+}
+
+.lineup-copy p,
+.lineup-copy em {
+  margin: 0;
+  line-height: 1.25;
+}
+
+.lineup-copy p {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.lineup-copy em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.lineup-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  align-self: end;
+}
+
+.lineup-meta b {
+  font-size: 18px;
+  line-height: 1.05;
+}
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  background: #edf8ef;
+  padding: 5px 8px;
+}
+
+.status-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--felt-2);
+}
+
+.status-dot.thinking::before {
+  background: var(--learn);
+}
+
+.status-dot.folded::before {
+  background: var(--muted);
+}
+
+.status-dot.winner::before {
+  background: var(--sky);
+}
+
+.lineup-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.lineup-settings label {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid rgba(23, 50, 59, .14);
+  border-radius: 14px;
+  background: white;
+  padding: 0 12px;
+}
+
+.lineup-settings input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--sky);
+}
+
 .play-layout {
   max-width: 1500px;
   margin: 0 auto;
@@ -224,6 +437,8 @@ input:focus-visible {
 @media (hover: hover) {
   .primary-action:hover,
   .secondary-action:hover,
+  .lineup-toggle:hover,
+  .icon-button:hover,
   .preset:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 0 rgba(23, 50, 59, .14);
@@ -232,6 +447,8 @@ input:focus-visible {
 
 .primary-action:active,
 .secondary-action:active,
+.lineup-toggle:active,
+.icon-button:active,
 .preset:active {
   transform: translateY(3px);
   box-shadow: 0 2px 0 rgba(23, 50, 59, .14);
@@ -356,6 +573,23 @@ input:focus-visible {
 .seat small {
   grid-column: 2;
   font-weight: 950;
+}
+
+.dealer-chip {
+  position: absolute;
+  left: 8px;
+  bottom: -14px;
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 2px solid rgba(23, 50, 59, .22);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 950;
+  box-shadow: 0 3px 0 rgba(23, 50, 59, .12);
 }
 
 .seat em {
@@ -501,6 +735,18 @@ input:focus-visible {
 
 .playing-card.black {
   color: var(--ink);
+}
+
+.high-contrast-suits .playing-card.red,
+.high-contrast-suits .mini-card.red {
+  color: #b51032;
+  background: #fff5f7;
+}
+
+.high-contrast-suits .playing-card.black,
+.high-contrast-suits .mini-card.black {
+  color: #06181e;
+  background: #f7fbff;
 }
 
 .playing-card span {
@@ -933,6 +1179,14 @@ input:focus-visible {
   white-space: nowrap;
 }
 
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -1000,6 +1254,10 @@ input:focus-visible {
     grid-column: 1 / -1;
   }
 
+  .lineup-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .play-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1028,6 +1286,18 @@ input:focus-visible {
 
   .top-rail {
     grid-template-columns: 1fr;
+  }
+
+  .lineup-drawer {
+    padding: 12px;
+  }
+
+  .lineup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lineup-card {
+    min-height: 130px;
   }
 
   .table-felt {

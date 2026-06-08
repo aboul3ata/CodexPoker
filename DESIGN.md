@@ -32,7 +32,7 @@ Use a rounded display face for headings and a friendly readable sans for UI. The
 - Action footer: legal poker actions only; disabled states include reasons.
 - Codex chat bridge: Uplift table talk and review back-and-forth happen in the Codex chat, not in the preview UI.
 - Review scene: quick result moment, bankroll/Elo delta, one Uplift lesson, decision timeline, and `Next hand`.
-- Settings drawer: provider/seat setup and accessibility switches.
+- Lineup drawer: provider/model labels, seat personality, stack/status, and accessibility switches.
 
 ## Accessibility
 

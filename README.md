@@ -1,8 +1,8 @@
 # CodexPoker
 
-CodexPoker is a local-first Texas Hold'em table designed to run in the Codex preview. You play as the human seat, Uplift is the Codex-controlled seat, and local bots keep the table moving.
+CodexPoker is a local-first Texas Hold'em table designed to run in the Codex preview. You play as the human seat, Uplift is the Codex-controlled seat in this chat, and model-flavored local bots keep the table moving.
 
-The app keeps a local SQLite profile with bankroll, Elo rating, recent hand results, and a compact stack trail in the preview.
+The app keeps a local SQLite profile with bankroll, Elo rating, recent hand results, a compact stack trail, and a table lineup drawer in the preview.
 
 The preview is the poker table. Uplift's table talk, hidden-hand reasoning, and hand-review conversation happen in the Codex chat that is running the repo.
 

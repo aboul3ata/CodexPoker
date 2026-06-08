@@ -49,6 +49,8 @@ describe('GameService', () => {
     expect(uplift?.cards).toBeUndefined()
     expect(state.legalActions.length).toBeGreaterThan(0)
     expect(state.pot).toBeGreaterThan(0)
+    expect(uplift?.modelLabel).toBe('This Codex session')
+    expect(state.seats.find((seat) => seat.seatId === 'atlas')?.tableRole).toBe('Stack bully')
   })
 
   it('pauses on Uplift and writes a sanitized Codex bridge packet', () => {

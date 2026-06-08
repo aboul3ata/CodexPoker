@@ -22,13 +22,69 @@ type PokerTable = InstanceType<typeof PokerTableConstructor>
 
 const seatOrder: SeatId[] = ['user', 'uplift', 'pip', 'nova', 'clio', 'atlas']
 
-const seatMeta: Record<SeatId, Pick<SeatView, 'seatId' | 'seatIndex' | 'name' | 'kind' | 'providerLabel'>> = {
-  user: { seatId: 'user', seatIndex: 0, name: 'Ali', kind: 'human', providerLabel: 'Human' },
-  uplift: { seatId: 'uplift', seatIndex: 1, name: 'Uplift', kind: 'codex', providerLabel: 'Codex bridge' },
-  pip: { seatId: 'pip', seatIndex: 2, name: 'Pip', kind: 'bot', providerLabel: 'Local bot' },
-  nova: { seatId: 'nova', seatIndex: 3, name: 'Nova', kind: 'bot', providerLabel: 'Local bot' },
-  clio: { seatId: 'clio', seatIndex: 4, name: 'Clio', kind: 'bot', providerLabel: 'Local bot' },
-  atlas: { seatId: 'atlas', seatIndex: 5, name: 'Atlas', kind: 'bot', providerLabel: 'Local bot' }
+type SeatMeta = Pick<SeatView, 'seatId' | 'seatIndex' | 'name' | 'kind' | 'providerLabel' | 'modelLabel' | 'tableRole' | 'personality'>
+
+const seatMeta: Record<SeatId, SeatMeta> = {
+  user: {
+    seatId: 'user',
+    seatIndex: 0,
+    name: 'Ali',
+    kind: 'human',
+    providerLabel: 'Human',
+    modelLabel: 'Preview player',
+    tableRole: 'Hero seat',
+    personality: 'Pressure-tests Uplift with live decisions.'
+  },
+  uplift: {
+    seatId: 'uplift',
+    seatIndex: 1,
+    name: 'Uplift',
+    kind: 'codex',
+    providerLabel: 'Codex',
+    modelLabel: 'This Codex session',
+    tableRole: 'Chat rival',
+    personality: 'Banter in chat, private cards stay private.'
+  },
+  pip: {
+    seatId: 'pip',
+    seatIndex: 2,
+    name: 'Pip',
+    kind: 'bot',
+    providerLabel: 'Local bot',
+    modelLabel: 'Heuristic caller v0',
+    tableRole: 'Loose caller',
+    personality: 'Likes seeing flops and paying small prices.'
+  },
+  nova: {
+    seatId: 'nova',
+    seatIndex: 3,
+    name: 'Nova',
+    kind: 'bot',
+    providerLabel: 'Local bot',
+    modelLabel: 'Heuristic pressure v0',
+    tableRole: 'Pot builder',
+    personality: 'Finds small bets when the table slows down.'
+  },
+  clio: {
+    seatId: 'clio',
+    seatIndex: 4,
+    name: 'Clio',
+    kind: 'bot',
+    providerLabel: 'Local bot',
+    modelLabel: 'Heuristic archivist v0',
+    tableRole: 'Pattern seat',
+    personality: 'Checks often, then remembers who blinked.'
+  },
+  atlas: {
+    seatId: 'atlas',
+    seatIndex: 5,
+    name: 'Atlas',
+    kind: 'bot',
+    providerLabel: 'Local bot',
+    modelLabel: 'Heuristic stack v0',
+    tableRole: 'Stack bully',
+    personality: 'Pushes when the price stays manageable.'
+  }
 }
 
 const rankingNames = [
@@ -362,7 +418,7 @@ export class GameService {
         isButton: button === index,
         isToAct: actingSeatId === seatId,
         isFolded,
-        status: isWinner ? 'winner' : isFolded ? 'folded' : actingSeatId === seatId ? 'thinking' : seatId === 'uplift' && this.review ? 'fallback' : 'ready',
+        status: isWinner ? 'winner' : isFolded ? 'folded' : actingSeatId === seatId ? 'thinking' : 'ready',
         cards,
         revealedCards
       }

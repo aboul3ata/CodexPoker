@@ -27,12 +27,15 @@ export type SeatView = {
   name: string
   kind: 'human' | 'codex' | 'bot'
   providerLabel: string
+  modelLabel: string
+  tableRole: string
+  personality: string
   stack: number
   bet: number
   isButton: boolean
   isToAct: boolean
   isFolded: boolean
-  status: 'ready' | 'thinking' | 'fallback' | 'folded' | 'winner'
+  status: 'ready' | 'thinking' | 'folded' | 'winner'
   cards?: Card[]
   revealedCards?: Card[]
 }

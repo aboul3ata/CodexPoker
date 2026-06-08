@@ -23,6 +23,9 @@ const baseState: GameSnapshot = {
       name: 'Ali',
       kind: 'human',
       providerLabel: 'Human',
+      modelLabel: 'Preview player',
+      tableRole: 'Hero seat',
+      personality: 'Pressure-tests Uplift with live decisions.',
       stack: 10200,
       bet: 0,
       isButton: true,
@@ -39,7 +42,10 @@ const baseState: GameSnapshot = {
       seatIndex: 1,
       name: 'Uplift',
       kind: 'codex',
-      providerLabel: 'Codex bridge',
+      providerLabel: 'Codex',
+      modelLabel: 'This Codex session',
+      tableRole: 'Chat rival',
+      personality: 'Banter in chat, private cards stay private.',
       stack: 9800,
       bet: 0,
       isButton: false,
@@ -57,6 +63,9 @@ const baseState: GameSnapshot = {
       name: 'Pip',
       kind: 'bot',
       providerLabel: 'Local bot',
+      modelLabel: 'Heuristic caller v0',
+      tableRole: 'Loose caller',
+      personality: 'Likes seeing flops and paying small prices.',
       stack: 9800,
       bet: 0,
       isButton: false,
@@ -70,6 +79,9 @@ const baseState: GameSnapshot = {
       name: 'Nova',
       kind: 'bot',
       providerLabel: 'Local bot',
+      modelLabel: 'Heuristic pressure v0',
+      tableRole: 'Pot builder',
+      personality: 'Finds small bets when the table slows down.',
       stack: 9800,
       bet: 0,
       isButton: false,
@@ -83,6 +95,9 @@ const baseState: GameSnapshot = {
       name: 'Clio',
       kind: 'bot',
       providerLabel: 'Local bot',
+      modelLabel: 'Heuristic archivist v0',
+      tableRole: 'Pattern seat',
+      personality: 'Checks often, then remembers who blinked.',
       stack: 9800,
       bet: 0,
       isButton: false,
@@ -96,6 +111,9 @@ const baseState: GameSnapshot = {
       name: 'Atlas',
       kind: 'bot',
       providerLabel: 'Local bot',
+      modelLabel: 'Heuristic stack v0',
+      tableRole: 'Stack bully',
+      personality: 'Pushes when the price stays manageable.',
       stack: 9800,
       bet: 0,
       isButton: false,
@@ -137,6 +155,8 @@ describe('safe CLI state output', () => {
     expect(output.protocol.privateInfo).toContain('must not be revealed')
     expect(output.state).not.toHaveProperty('recentChat')
     expect(output.state).not.toHaveProperty('chat')
+    expect(output.state.seats.find((seat) => seat.seatId === 'uplift')?.modelLabel).toBe('This Codex session')
+    expect(output.state.seats.find((seat) => seat.seatId === 'atlas')?.tableRole).toBe('Stack bully')
     expect(output.codexChat.mode).toBe('ali-to-act')
     expect(output.codexChat.tableTalkCue).toContain('Wait for Ali to act')
     expect(output.codexChat.publicTableStory).toContain('last action: Atlas check on flop')

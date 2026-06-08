@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { Bot, ChevronRight, RotateCcw, Sparkles, Zap } from 'lucide-react'
+import { Bot, ChevronRight, RotateCcw, Sparkles, UsersRound, X, Zap } from 'lucide-react'
 import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, ReviewSnapshot, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
@@ -13,9 +13,19 @@ const avatarBySeat: Record<SeatId, string> = {
   atlas: '/assets/generated/atlas.svg'
 }
 
+type PreviewPreferences = {
+  reducedMotion: boolean
+  highContrastSuits: boolean
+}
+
 function App() {
   const [state, setState] = useState<GameSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [lineupOpen, setLineupOpen] = useState(false)
+  const [preferences, setPreferences] = useState<PreviewPreferences>({
+    reducedMotion: false,
+    highContrastSuits: false
+  })
 
   useEffect(() => {
     fetchState().then(setState).catch((err) => setError(err.message))
@@ -59,6 +69,10 @@ function App() {
     })
   }
 
+  function togglePreference(key: keyof PreviewPreferences) {
+    setPreferences((current) => ({ ...current, [key]: !current[key] }))
+  }
+
   if (!state) {
     return (
       <main className="boot">
@@ -69,8 +83,14 @@ function App() {
     )
   }
 
+  const shellClass = [
+    'app-shell',
+    preferences.reducedMotion ? 'reduced-motion' : '',
+    preferences.highContrastSuits ? 'high-contrast-suits' : ''
+  ].filter(Boolean).join(' ')
+
   return (
-    <main className="app-shell">
+    <main className={shellClass}>
       <section className="top-rail" aria-label="Session status">
         <div className="brand-lockup">
           <div className="brand-mark">CP</div>
@@ -85,7 +105,26 @@ function App() {
           <Zap size={16} />
           {bridgeLabel(state.bridgeStatus)}
         </div>
+        <button
+          aria-controls="table-lineup"
+          aria-expanded={lineupOpen}
+          className={`lineup-toggle ${lineupOpen ? 'active' : ''}`}
+          onClick={() => setLineupOpen((open) => !open)}
+          type="button"
+        >
+          <UsersRound size={18} />
+          <span>Lineup</span>
+        </button>
       </section>
+
+      {lineupOpen ? (
+        <LineupDrawer
+          state={state}
+          preferences={preferences}
+          onClose={() => setLineupOpen(false)}
+          onTogglePreference={togglePreference}
+        />
+      ) : null}
 
       <section className={`play-layout ${state.phase}`}>
         <section className="table-column" aria-label="Poker table">
@@ -127,6 +166,71 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
+function LineupDrawer({
+  state,
+  preferences,
+  onClose,
+  onTogglePreference
+}: {
+  state: GameSnapshot
+  preferences: PreviewPreferences
+  onClose: () => void
+  onTogglePreference: (key: keyof PreviewPreferences) => void
+}) {
+  return (
+    <section className="lineup-drawer" id="table-lineup" aria-label="Table lineup">
+      <div className="lineup-head">
+        <div>
+          <span>Table lineup</span>
+          <strong>Six-seat study table</strong>
+        </div>
+        <button className="icon-button" onClick={onClose} type="button" aria-label="Close lineup">
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="lineup-grid">
+        {state.seats.map((seat) => (
+          <article className={`lineup-card ${seat.kind} ${seat.isToAct ? 'to-act' : ''}`} key={seat.seatId}>
+            <img src={avatarBySeat[seat.seatId]} alt="" />
+            <div className="lineup-copy">
+              <div className="lineup-name">
+                <strong>{seat.name}</strong>
+                <span>{seat.tableRole}</span>
+              </div>
+              <p>{seat.modelLabel}</p>
+              <em>{seat.personality}</em>
+            </div>
+            <div className="lineup-meta">
+              <b>{formatChips(seat.stack)}</b>
+              <span className={`status-dot ${seat.status}`}>{statusLabel(seat.status)}</span>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="lineup-settings" aria-label="Preview preferences">
+        <label>
+          <input
+            checked={preferences.reducedMotion}
+            onChange={() => onTogglePreference('reducedMotion')}
+            type="checkbox"
+          />
+          <span>Reduce motion</span>
+        </label>
+        <label>
+          <input
+            checked={preferences.highContrastSuits}
+            onChange={() => onTogglePreference('highContrastSuits')}
+            type="checkbox"
+          />
+          <span>High-contrast suits</span>
+        </label>
+      </div>
+    </section>
+  )
+}
+
 function PokerTable({ state }: { state: GameSnapshot }) {
   const seats = state.seats
   return (
@@ -159,13 +263,17 @@ function PokerTable({ state }: { state: GameSnapshot }) {
 
 function Seat({ seat, index }: { seat: SeatView; index: number }) {
   return (
-    <article className={`seat seat-${index} ${seat.isToAct ? 'to-act' : ''} ${seat.isFolded ? 'folded' : ''}`}>
+    <article
+      aria-label={`${seat.name}, ${seat.tableRole}, ${formatChips(seat.stack)} chips`}
+      className={`seat seat-${index} ${seat.kind} ${seat.isToAct ? 'to-act' : ''} ${seat.isFolded ? 'folded' : ''}`}
+    >
       <img src={avatarBySeat[seat.seatId]} alt={`${seat.name} avatar`} />
       <div>
         <strong>{seat.name}</strong>
         <span>{seat.providerLabel}</span>
       </div>
       <small>{formatChips(seat.stack)}</small>
+      {seat.isButton ? <span className="dealer-chip" aria-label={`${seat.name} dealer button`}>D</span> : null}
       {seat.bet > 0 ? <em>{formatChips(seat.bet)}</em> : null}
       {seat.revealedCards?.length ? (
         <div className="seat-cards" aria-label={`${seat.name} revealed cards`}>
@@ -531,6 +639,15 @@ function bridgeLabel(status: GameSnapshot['bridgeStatus']) {
     'local-bots-moving': 'Bots moving',
     'user-to-act': 'Your turn',
     'hand-complete': 'Review ready'
+  }[status]
+}
+
+function statusLabel(status: SeatView['status']) {
+  return {
+    ready: 'Ready',
+    thinking: 'Thinking',
+    folded: 'Folded',
+    winner: 'Winner'
   }[status]
 }
 

@@ -10,6 +10,20 @@ test('renders the playable CodexPoker table', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
   await expect(page.getByText('Uplift review', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Balance history' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Lineup' }).click()
+  const lineup = page.getByRole('region', { name: 'Table lineup' })
+  await expect(lineup).toBeVisible()
+  await expect(lineup.getByText('This Codex session')).toBeVisible()
+  await expect(lineup.getByText('Heuristic stack v0')).toBeVisible()
+  await expect(lineup.getByText('Chat rival')).toBeVisible()
+
+  await page.getByLabel('Reduce motion').check()
+  await expect(page.locator('.app-shell')).toHaveClass(/reduced-motion/)
+  await page.getByLabel('High-contrast suits').check()
+  await expect(page.locator('.app-shell')).toHaveClass(/high-contrast-suits/)
+  await lineup.getByRole('button', { name: 'Close lineup' }).click()
+  await expect(lineup).toHaveCount(0)
 })
 
 test('supports a legal user action from the preview', async ({ page, request }) => {
