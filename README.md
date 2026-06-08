@@ -43,6 +43,7 @@ npm run game:act -- --seat uplift --turn-token <token> --action <fold|check|call
 ```
 
 Use `npm run --silent game:act -- ...` if you want only the JSON response without npm's script header.
+`game:act` intentionally rejects non-Uplift seats; Ali's actions happen through the preview controls.
 
 After each hand, the server writes:
 

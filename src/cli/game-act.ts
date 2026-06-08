@@ -1,20 +1,17 @@
-import { actionKinds, seatIds } from '../shared/contracts'
 import type { GameSnapshot } from '../shared/contracts'
 import { parseArgs, postApi } from './client'
+import { gameActUsage, parseGameActArgs } from './game-act-args'
 import { buildSafeStateOutput } from './state-output'
 
-const args = parseArgs(process.argv.slice(2))
-const seat = String(args.seat ?? '')
-const action = String(args.action ?? '')
-const turnToken = String(args['turn-token'] ?? args.turnToken ?? '')
-const amount = args.amount ? Number(args.amount) : undefined
+const parsed = parseGameActArgs(parseArgs(process.argv.slice(2)))
 
-if (!seatIds.includes(seat as never) || !actionKinds.includes(action as never) || !turnToken) {
-  console.error('Usage: npm run game:act -- --seat uplift --turn-token <token> --action <fold|check|call|bet|raise> --amount <chips?>')
+if (!parsed.ok) {
+  console.error(parsed.message)
+  console.error(gameActUsage)
   process.exit(6)
 }
 
-postApi('/api/action', { seat, action, turnToken, amount })
+postApi('/api/action', parsed.request)
   .then((result) => {
     const state = result.state as GameSnapshot | undefined
     if (!state) throw Object.assign(new Error('The running preview did not return a game state.'), { code: 'storage_unavailable' })

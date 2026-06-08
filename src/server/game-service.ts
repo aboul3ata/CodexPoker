@@ -181,6 +181,7 @@ export class GameService {
   private publicActions: PublicAction[] = []
   private review: ReviewSnapshot | undefined
   private handStartStacks: Record<SeatId, number>
+  private handContributions: Record<SeatId, number>
   private seatStacks: Record<SeatId, number>
   private tableNotice: string | undefined
   private userVpipThisHand = false
@@ -199,6 +200,7 @@ export class GameService {
       atlas: initialStack
     }
     this.handStartStacks = { ...this.seatStacks }
+    this.handContributions = this.zeroSeatAmounts()
     this.startNewHand()
   }
 
@@ -290,11 +292,13 @@ export class GameService {
     this.userFoldedThisHand = false
     this.tableNotice = this.ensurePlayableStacks()
     this.handStartStacks = { ...this.seatStacks }
+    this.handContributions = this.zeroSeatAmounts()
     this.table = new PokerTableConstructor({ smallBlind: 50, bigBlind: 100 }, seatOrder.length)
     for (const seatId of seatOrder) {
       this.table.sitDown(seatMeta[seatId].seatIndex, this.seatStacks[seatId])
     }
     this.table.startHand(this.dealerSeat)
+    this.captureForcedBetContributions()
     this.dealerSeat = (this.dealerSeat + 1) % seatOrder.length
     this.issueTurnToken()
     this.advanceUntilHumanOrCodex()
@@ -345,13 +349,20 @@ export class GameService {
       throw new InvalidActionError(`${action} must be between ${legalAction.min} and ${legalAction.max}.`)
     }
 
-    const beforeBet = this.getSeatViews().find((seat) => seat.seatId === seatId)?.bet ?? 0
+    const seatIndex = seatMeta[seatId].seatIndex
+    const beforeSeat = this.table.seats()[seatIndex]
+    const beforeStack = beforeSeat?.stack ?? 0
+    const beforeBet = beforeSeat?.betSize ?? 0
+    const toCall = Math.max(0, this.getCurrentHighestBet() - beforeBet)
+    const expectedCommit = this.getExpectedCommit(action, amount, beforeStack, beforeBet, toCall)
     const actionStreet = this.getStreet()
     try {
       this.table.actionTaken(action, amount)
     } catch (error) {
       throw new InvalidActionError(error instanceof Error ? error.message : 'Invalid poker action.')
     }
+    const afterStack = this.table.seats()[seatIndex]?.stack ?? 0
+    this.handContributions[seatId] += Math.max(0, beforeStack - afterStack, expectedCommit)
     this.actionSeq += 1
     this.publicActions.push({
       seq: this.actionSeq,
@@ -359,7 +370,7 @@ export class GameService {
       name: seatMeta[seatId].name,
       street: actionStreet,
       action,
-      amount: amount ?? (action === 'call' ? this.getToCall(beforeBet) : undefined),
+      amount: amount ?? (action === 'call' && expectedCommit > 0 ? expectedCommit : undefined),
       at: new Date().toISOString()
     })
     this.updateTendencies(seatId, action, actionStreet)
@@ -372,15 +383,23 @@ export class GameService {
     if (this.review) return
     clearCurrentTurn()
     const endSeats = this.table.seats()
-    const deltas = {} as Record<SeatId, number>
+    const reportedStacks = {} as Record<SeatId, number>
+    const reportedDeltas = {} as Record<SeatId, number>
     for (const seatId of seatOrder) {
       const stack = endSeats[seatMeta[seatId].seatIndex]?.stack ?? this.seatStacks[seatId]
+      reportedStacks[seatId] = stack
+      reportedDeltas[seatId] = stack - this.handStartStacks[seatId]
+    }
+    const deltas = {} as Record<SeatId, number>
+    const winningSeatIds = this.getWinningSeatIds(reportedDeltas)
+    const settledStacks = this.settleStacksWithConservation(reportedStacks, winningSeatIds)
+    for (const seatId of seatOrder) {
+      const stack = settledStacks[seatId]
       this.seatStacks[seatId] = stack
       deltas[seatId] = stack - this.handStartStacks[seatId]
     }
     const settledPot = Object.values(deltas).filter((delta) => delta > 0).reduce((sum, delta) => sum + delta, 0)
     const finalPot = capturedPot > 0 ? capturedPot : settledPot
-    const winningSeatIds = this.getWinningSeatIds(deltas)
     const bankrollDelta = deltas.user
     const ratingDelta = this.getRatingDelta(bankrollDelta)
     const winningHandName = this.getWinningHandName(winningSeatIds)
@@ -451,6 +470,75 @@ export class GameService {
     if (max <= min) return min
     const target = min + (max - min) * profile.wagerFraction
     return Math.max(min, Math.min(max, Math.round(target / 50) * 50))
+  }
+
+  private getExpectedCommit(action: ActionKind, amount: number | undefined, stack: number, currentBet: number, toCall: number) {
+    if (action === 'call') return Math.min(stack, toCall)
+    if (action === 'bet') return Math.min(stack, amount ?? 0)
+    if (action === 'raise') return Math.min(stack, Math.max(0, (amount ?? 0) - currentBet))
+    return 0
+  }
+
+  private captureForcedBetContributions() {
+    const seats = this.table.seats()
+    for (const seatId of seatOrder) {
+      const stack = seats[seatMeta[seatId].seatIndex]?.stack ?? this.handStartStacks[seatId]
+      this.handContributions[seatId] = Math.max(0, this.handStartStacks[seatId] - stack)
+    }
+  }
+
+  private settleStacksWithConservation(reportedStacks: Record<SeatId, number>, winningSeatIds: SeatId[]) {
+    const targetTotal = this.sumSeatAmounts(this.handStartStacks)
+    const reportedTotal = this.sumSeatAmounts(reportedStacks)
+    const settledStacks = { ...reportedStacks }
+    let excess = reportedTotal - targetTotal
+
+    if (excess > 0) {
+      const contributionFloors = Object.fromEntries(
+        seatOrder.map((seatId) => [seatId, Math.max(0, this.handStartStacks[seatId] - this.handContributions[seatId])])
+      ) as Record<SeatId, number>
+      const losersFirst = [
+        ...seatOrder.filter((seatId) => !winningSeatIds.includes(seatId)),
+        ...seatOrder.filter((seatId) => winningSeatIds.includes(seatId))
+      ]
+
+      for (const seatId of losersFirst) {
+        if (excess <= 0) break
+        const removable = Math.max(0, settledStacks[seatId] - contributionFloors[seatId])
+        const adjustment = Math.min(removable, excess)
+        settledStacks[seatId] -= adjustment
+        excess -= adjustment
+      }
+
+      for (const seatId of [...seatOrder].sort((a, b) => settledStacks[b] - settledStacks[a])) {
+        if (excess <= 0) break
+        const adjustment = Math.min(settledStacks[seatId], excess)
+        settledStacks[seatId] -= adjustment
+        excess -= adjustment
+      }
+    }
+
+    if (excess < 0) {
+      const recipients = winningSeatIds.length ? winningSeatIds : [seatOrder[0]]
+      settledStacks[recipients[0]] += Math.abs(excess)
+    }
+
+    return settledStacks
+  }
+
+  private sumSeatAmounts(amounts: Record<SeatId, number>) {
+    return seatOrder.reduce((sum, seatId) => sum + amounts[seatId], 0)
+  }
+
+  private zeroSeatAmounts(): Record<SeatId, number> {
+    return {
+      user: 0,
+      uplift: 0,
+      pip: 0,
+      nova: 0,
+      clio: 0,
+      atlas: 0
+    }
   }
 
   private getActingSeat(): SeatId | null {
