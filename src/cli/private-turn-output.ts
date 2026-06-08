@@ -1,5 +1,14 @@
-import type { CurrentTurnPacket, GameSnapshot, LegalAction, SeatId } from '../shared/contracts'
+import type { ActionKind, CurrentTurnPacket, GameSnapshot, LegalAction, SeatId } from '../shared/contracts'
 import { scoreHolding } from '../server/bot-strength'
+
+export type PrivateActionRecommendation = {
+  action: ActionKind
+  amount?: number
+  strength: number
+  confidence: 'low' | 'medium' | 'high'
+  reason: string
+  command: string
+}
 
 export function buildPrivateTurnOutput(state: GameSnapshot, packet: CurrentTurnPacket, filePath: string) {
   const recommendation = buildRecommendedAction(packet)
@@ -63,7 +72,7 @@ function buildActionCommand(turnToken: string, action: LegalAction['kind'], amou
   return `npm run --silent game:act -- --seat uplift --turn-token ${turnToken} --action ${action}${amountArg}`
 }
 
-function buildRecommendedAction(packet: CurrentTurnPacket) {
+export function buildRecommendedAction(packet: CurrentTurnPacket): PrivateActionRecommendation {
   const strength = scoreHolding(packet.holeCards, packet.board)
   const legal = packet.legalActions
   const check = legal.find((action) => action.kind === 'check')
@@ -85,11 +94,12 @@ function buildRecommendedAction(packet: CurrentTurnPacket) {
 }
 
 function recommendation(packet: CurrentTurnPacket, action: LegalAction, amount: number | undefined, strength: number, reason: string) {
+  const confidence: PrivateActionRecommendation['confidence'] = strength >= 0.74 ? 'high' : strength >= 0.5 ? 'medium' : 'low'
   return {
     action: action.kind,
     amount,
     strength,
-    confidence: strength >= 0.74 ? 'high' : strength >= 0.5 ? 'medium' : 'low',
+    confidence,
     reason,
     command: buildActionCommand(packet.turnToken, action.kind, amount)
   }

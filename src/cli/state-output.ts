@@ -91,7 +91,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
         'You may read the private turn file for Uplift action selection only.',
         'Never reveal, summarize, or hint at exact Uplift hole cards before showdown.',
         'Do not move for Ali; only submit an action for --seat uplift.',
-        'Run npm run --silent game:turn before choosing and submitting an Uplift action.'
+        'Run npm run --silent game:turn to inspect privately, or npm run --silent game:play to submit the private recommendation.'
       ]
     }
   }

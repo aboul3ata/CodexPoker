@@ -30,8 +30,8 @@ The intended loop is:
 
 1. Run `npm run --silent game:state`.
 2. Use `codexChat.suggestedTableLine`, `codexChat.tableTalkCue`, and `codexChat.publicTableStory` to banter in this Codex chat.
-3. If `privateTurn` is present, run `npm run --silent game:turn` for the private Uplift decision context.
-4. Submit only Uplift's move with `npm run --silent game:act -- ...`.
+3. If `privateTurn` is present, run `npm run --silent game:turn` for the private Uplift decision context, or `npm run --silent game:play` to submit the private recommendation.
+4. If you inspected with `game:turn`, submit only Uplift's move with `npm run --silent game:act -- ...`.
 
 When Uplift is to act, the server writes:
 
@@ -41,10 +41,12 @@ Codex can act with:
 
 ```bash
 npm run game:turn
+npm run game:play
 npm run game:act -- --seat uplift --turn-token <token> --action <fold|check|call|bet|raise> --amount <chips>
 ```
 
 `game:turn` intentionally prints Uplift's private decision packet. Use it for action selection only; table talk before showdown must come from the `chatSafe` section.
+`game:play` reads that same private packet, submits the recommended Uplift action, and prints safe post-action state for chat.
 Use `npm run --silent game:act -- ...` if you want only the JSON response without npm's script header.
 `game:act` intentionally rejects non-Uplift seats; Ali's actions happen through the preview controls.
 
@@ -75,6 +77,7 @@ npm run game:next
 - `npm run dev`: start Fastify and Vite together.
 - `npm run game:state`: inspect the live preview and get the next Codex command.
 - `npm run game:turn`: inspect Uplift's private decision packet only when Codex is to act.
+- `npm run game:play`: submit Uplift's private recommended action and return safe post-action state.
 - `npm run game:act`: submit an Uplift action from Codex.
 - `npm run game:next`: start the next hand after the completed-hand review offer.
 - `npm run game:review`: read the latest completed hand for a Codex chat review.

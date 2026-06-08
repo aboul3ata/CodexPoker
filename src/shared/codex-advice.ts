@@ -2,6 +2,7 @@ import type { GameSnapshot } from './contracts'
 
 export type CodexCommandAdvice = {
   turn?: string
+  play?: string
   next?: string
   review?: string
 }
@@ -17,7 +18,8 @@ export function buildCodexCommands(state: Pick<GameSnapshot, 'actingSeatId' | 'p
   if (state.actingSeatId !== 'uplift') return {}
 
   return {
-    turn: 'npm run --silent game:turn'
+    turn: 'npm run --silent game:turn',
+    play: 'npm run --silent game:play'
   }
 }
 

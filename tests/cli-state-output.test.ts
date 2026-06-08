@@ -185,7 +185,11 @@ describe('safe CLI state output', () => {
     expect(output.codexChat.suggestedTableLine).toContain('public context only')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('private turn file')
     expect(output.codexChat.privateGuardrails.join(' ')).toContain('game:turn')
-    expect(output.suggestedCommands).toEqual({ turn: 'npm run --silent game:turn' })
+    expect(output.codexChat.privateGuardrails.join(' ')).toContain('game:play')
+    expect(output.suggestedCommands).toEqual({
+      turn: 'npm run --silent game:turn',
+      play: 'npm run --silent game:play'
+    })
     expect(output.suggestedCommands).not.toHaveProperty('act')
     expect(output.codexChat.visibleLineup.find((seat) => seat.seatId === 'nova')?.modelLabel).toBe('Heuristic pressure v0')
     expect(guide).not.toContain('spades')
