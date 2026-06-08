@@ -5,16 +5,18 @@ import { buildCodexCommands, describeCodexNextStep } from '../shared/codex-advic
 import { getBridgeDir } from '../server/paths'
 
 export function buildSafeStateOutput(state: GameSnapshot) {
+  const privateTurn = getMatchingCurrentTurn(state)
+
   return {
     ok: true,
     protocol: {
       tableTalk: 'Use this Codex chat for Uplift table talk and hand-review back-and-forth; the preview is only the poker table.',
-      privateInfo: 'codexTurn.holeCards are private to Uplift/Codex and must not be revealed before showdown.'
+      privateInfo: 'Uplift private cards stay in the private turn file and must not be revealed before showdown.'
     },
     summary: describeCodexNextStep(state),
     codexChat: buildCodexChatGuide(state),
     suggestedCommands: buildCodexCommands(state),
-    codexTurn: getMatchingCurrentTurn(state),
+    privateTurn: privateTurn ? buildPrivateTurnReference(privateTurn) : undefined,
     state: {
       handId: state.handId,
       phase: state.phase,
@@ -47,6 +49,19 @@ export function buildSafeStateOutput(state: GameSnapshot) {
   }
 }
 
+function buildPrivateTurnReference(turn: { filePath: string; packet: CurrentTurnPacket }) {
+  return {
+    available: true,
+    handId: turn.packet.handId,
+    seat: turn.packet.seat,
+    turnToken: turn.packet.turnToken,
+    street: turn.packet.street,
+    actionSeq: turn.packet.actionSeq,
+    filePath: turn.filePath,
+    privateInfo: 'Read this file only for Uplift action selection. Never quote, summarize, or hint at the private cards in chat.'
+  }
+}
+
 function buildCodexChatGuide(state: GameSnapshot) {
   if (state.phase === 'hand-complete') {
     return {
@@ -73,7 +88,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
       suggestedTableLine: buildSuggestedTableLine(state),
       tableTalkCue: 'Banter here as Uplift using only public board/action context, then act with game:act.',
       privateGuardrails: [
-        'You may use codexTurn.holeCards privately for the poker decision.',
+        'You may read the private turn file for Uplift action selection only.',
         'Never reveal, summarize, or hint at exact Uplift hole cards before showdown.',
         'Do not move for Ali; only submit an action for --seat uplift.',
         'If you choose a different legal action than suggestedCommands.act, keep the same turnToken.'
@@ -175,7 +190,7 @@ function formatCard(card: { rank: string; suit: string }) {
   return `${card.rank}${suit}`
 }
 
-function getMatchingCurrentTurn(state: GameSnapshot) {
+function getMatchingCurrentTurn(state: GameSnapshot): { filePath: string; packet: CurrentTurnPacket } | undefined {
   if (state.actingSeatId !== 'uplift' || state.phase !== 'playing') return undefined
 
   const filePath = path.join(getBridgeDir(), 'current-turn.json')
@@ -184,16 +199,5 @@ function getMatchingCurrentTurn(state: GameSnapshot) {
   const packet = JSON.parse(fs.readFileSync(filePath, 'utf8')) as CurrentTurnPacket
   if (packet.handId !== state.handId || packet.turnToken !== state.turnToken) return undefined
 
-  return {
-    handId: packet.handId,
-    seat: packet.seat,
-    turnToken: packet.turnToken,
-    street: packet.street,
-    holeCards: packet.holeCards,
-    board: packet.board,
-    pot: packet.pot,
-    legalActions: packet.legalActions,
-    publicActionHistory: packet.publicActionHistory,
-    userTendencies: packet.userTendencies
-  }
+  return { filePath, packet }
 }

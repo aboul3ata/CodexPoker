@@ -1,6 +1,9 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildSafeStateOutput } from '../src/cli/state-output'
-import type { GameSnapshot } from '../src/shared/contracts'
+import type { CurrentTurnPacket, GameSnapshot, SeatId } from '../src/shared/contracts'
 
 const baseState: GameSnapshot = {
   schemaVersion: 1,
@@ -180,10 +183,62 @@ describe('safe CLI state output', () => {
     expect(output.codexChat.mode).toBe('uplift-to-act')
     expect(output.codexChat.tableTalkCue).toContain('Banter here as Uplift')
     expect(output.codexChat.suggestedTableLine).toContain('public context only')
-    expect(output.codexChat.privateGuardrails.join(' ')).toContain('codexTurn.holeCards')
+    expect(output.codexChat.privateGuardrails.join(' ')).toContain('private turn file')
     expect(output.codexChat.visibleLineup.find((seat) => seat.seatId === 'nova')?.modelLabel).toBe('Heuristic pressure v0')
     expect(guide).not.toContain('spades')
     expect(guide).not.toContain('clubs')
+  })
+
+  it('redacts the private turn packet from default state output', () => {
+    const previousDataDir = process.env.CODEX_POKER_DATA_DIR
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-poker-state-'))
+    process.env.CODEX_POKER_DATA_DIR = tempDir
+
+    try {
+      const bridgeDir = path.join(tempDir, 'bridge')
+      fs.mkdirSync(bridgeDir, { recursive: true })
+      const seatAmounts = buildSeatAmounts(0)
+      const packet: CurrentTurnPacket = {
+        schemaVersion: 1,
+        handId: 'hand_test',
+        seat: 'uplift',
+        turnToken: 'hand_test.12.uplift.token',
+        street: 'flop',
+        actionSeq: 12,
+        holeCards: [
+          { rank: '2', suit: 'diamonds' },
+          { rank: '9', suit: 'spades' }
+        ],
+        board: baseState.board,
+        pot: 1200,
+        stacks: buildSeatAmounts(9800),
+        bets: seatAmounts,
+        position: Object.fromEntries(Object.keys(seatAmounts).map((seatId) => [seatId, 'middle'])) as Record<SeatId, string>,
+        legalActions: [{ kind: 'fold' }, { kind: 'call', toCall: 150 }],
+        publicActionHistory: baseState.publicActions,
+        userTendencies: baseState.tendencySummary
+      }
+      fs.writeFileSync(path.join(bridgeDir, 'current-turn.json'), `${JSON.stringify(packet)}\n`, 'utf8')
+
+      const output = buildSafeStateOutput({
+        ...baseState,
+        actingSeatId: 'uplift',
+        bridgeStatus: 'waiting-for-codex',
+        turnToken: packet.turnToken,
+        legalActions: packet.legalActions
+      })
+      const serialized = JSON.stringify(output)
+
+      expect(output.privateTurn?.available).toBe(true)
+      expect(output.privateTurn?.filePath).toContain('current-turn.json')
+      expect(serialized).not.toContain('holeCards')
+      expect(serialized).not.toContain('diamonds')
+      expect(serialized).not.toContain('spades')
+    } finally {
+      if (previousDataDir) process.env.CODEX_POKER_DATA_DIR = previousDataDir
+      else delete process.env.CODEX_POKER_DATA_DIR
+      fs.rmSync(tempDir, { force: true, recursive: true })
+    }
   })
 
   it('suggests a public chat line after Uplift acts without revealing cards', () => {
@@ -209,3 +264,14 @@ describe('safe CLI state output', () => {
     expect(serialized).not.toContain('clubs')
   })
 })
+
+function buildSeatAmounts(value: number): Record<SeatId, number> {
+  return {
+    user: value,
+    uplift: value,
+    pip: value,
+    nova: value,
+    clio: value,
+    atlas: value
+  }
+}

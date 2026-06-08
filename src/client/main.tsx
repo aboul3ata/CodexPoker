@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { Bot, ChevronRight, RotateCcw, Sparkles, UsersRound, X, Zap } from 'lucide-react'
-import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, ReviewSnapshot, SeatId, SeatView } from '../shared/contracts'
+import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, PublicAction, ReviewSnapshot, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
 const avatarBySeat: Record<SeatId, string> = {
@@ -131,6 +131,7 @@ function App() {
           {error ? <div className="error-banner" role="alert">{error}</div> : null}
           {state.tableNotice ? <div className="table-notice">{state.tableNotice}</div> : null}
           <PokerTable state={state} />
+          <ActionRail state={state} />
           <ActionFooter
             state={state}
             isUserTurn={isUserTurn}
@@ -305,6 +306,41 @@ function PlayingCard({ card, muted, large }: { card?: Card; muted?: boolean; lar
       <span>{card.rank}</span>
       <b>{suitSymbol(card.suit)}</b>
     </div>
+  )
+}
+
+function ActionRail({ state }: { state: GameSnapshot }) {
+  const beats = state.publicActions.slice(-5)
+  return (
+    <section className="action-rail" aria-label="Table beats">
+      <div className="action-rail-head">
+        <span>Table beats</span>
+        <strong>{state.publicActions.length ? `${state.publicActions.length} moves` : state.street}</strong>
+      </div>
+      <div className="beat-track">
+        {beats.length ? beats.map((action) => (
+          <ActionBeat action={action} key={action.seq} />
+        )) : (
+          <div className="beat-empty">
+            <img src={avatarBySeat.uplift} alt="" />
+            <span>Opening deal</span>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function ActionBeat({ action }: { action: PublicAction }) {
+  return (
+    <article className={`action-beat ${action.seatId === 'user' ? 'user' : ''}`}>
+      <img src={avatarBySeat[action.seatId]} alt="" />
+      <div>
+        <span>{action.street}</span>
+        <strong>{action.name} {formatActionKind(action.action)}</strong>
+      </div>
+      {action.amount ? <em>{formatChips(action.amount)}</em> : null}
+    </article>
   )
 }
 
@@ -582,6 +618,10 @@ function actionLabel(action: LegalAction) {
   if (action.kind === 'bet') return `Bet ${formatChips(action.min ?? 0)}`
   if (action.kind === 'raise') return `Raise to ${formatChips(action.min ?? 0)}`
   return action.kind[0].toUpperCase() + action.kind.slice(1)
+}
+
+function formatActionKind(action: PublicAction['action']) {
+  return action[0].toUpperCase() + action.slice(1)
 }
 
 function buildAmountPresets(action: LegalAction, pot: number) {

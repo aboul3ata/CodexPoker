@@ -10,6 +10,7 @@ test('renders the playable CodexPoker table', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
   await expect(page.getByText('Uplift review', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Balance history' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Table beats' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Lineup' }).click()
   const lineup = page.getByRole('region', { name: 'Table lineup' })
@@ -45,6 +46,7 @@ test('supports a legal user action from the preview', async ({ page, request }) 
   await actionButton.click()
 
   await expect(page.getByText(/Codex to act|Your turn|Review ready|Bots moving/)).toBeVisible()
+  await expect(page.locator('.action-rail .action-beat')).not.toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
 })
 
@@ -79,6 +81,7 @@ test('keeps the table usable on mobile', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'CodexPoker' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Poker table' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Table beats' })).toBeVisible()
   await expect(page.locator('.action-footer')).toBeVisible()
 })
 
