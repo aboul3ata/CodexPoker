@@ -42,6 +42,33 @@ function tableChipTotal(state: GameSnapshot) {
   return state.seats.reduce((sum, seat) => sum + seat.stack + seat.bet, 0)
 }
 
+function variedUserAction(state: GameSnapshot, hand: number, step: number) {
+  const legal = state.legalActions
+  const wager = legal.find((action) => action.kind === 'raise') ?? legal.find((action) => action.kind === 'bet')
+  const check = legal.find((action) => action.kind === 'check')
+  const call = legal.find((action) => action.kind === 'call')
+  const fold = legal.find((action) => action.kind === 'fold')
+  const shouldFold = Boolean(fold && !check && (hand + step) % 6 === 0)
+
+  if (shouldFold) return userAction(state, 'fold')
+
+  if (wager && (hand + step) % 5 === 0) {
+    const min = wager.min ?? 0
+    const max = wager.max ?? min
+    const amount = Math.min(max, min + (((hand + step) % 4) * 50))
+    return service.submitAction({
+      seat: 'user',
+      turnToken: state.turnToken,
+      action: wager.kind,
+      amount
+    })
+  }
+
+  if (check) return userAction(state, 'check')
+  if (call) return userAction(state, 'call')
+  return userAction(state, 'fold')
+}
+
 describe('GameService', () => {
   it('starts a real hidden-information hand for the user', () => {
     const state = service.getSnapshot()
@@ -181,6 +208,69 @@ describe('GameService', () => {
       const vpip = Number(state.tendencySummary.match(/VPIP-ish (\\d+)%/)?.[1] ?? 0)
       expect(vpip).toBeLessThanOrEqual(100)
       state = service.startNewHand()
+    }
+  })
+
+  it('survives varied multi-hand play with bridge packets and history intact', () => {
+    for (let hand = 0; hand < 120; hand += 1) {
+      let state = service.getSnapshot()
+      const startingTableTotal = tableChipTotal(state)
+      let guard = 0
+
+      while (state.phase !== 'hand-complete' && guard < 250) {
+        guard += 1
+
+        if (state.actingSeatId === 'user') {
+          const previousSeq = state.actionSeq
+          state = variedUserAction(state, hand, guard)
+          expect(state.actionSeq).toBeGreaterThanOrEqual(previousSeq + 1)
+          if (state.phase === 'playing' && state.seats.find((seat) => seat.seatId === 'user')?.isFolded) {
+            state = service.fastForwardAfterFold()
+          }
+          continue
+        }
+
+        if (state.actingSeatId === 'uplift') {
+          const packetPath = path.join(tempDir, 'bridge/current-turn.json')
+          expect(fs.existsSync(packetPath)).toBe(true)
+          const packet = JSON.parse(fs.readFileSync(packetPath, 'utf8')) as CurrentTurnPacket
+          expect(packet.handId).toBe(state.handId)
+          expect(packet.turnToken).toBe(state.turnToken)
+          expect(packet.holeCards).toHaveLength(2)
+          state = service.useUpliftFallback()
+          if (state.actingSeatId !== 'uplift') expect(fs.existsSync(packetPath)).toBe(false)
+          continue
+        }
+
+        throw new Error(`Unexpected acting seat: ${state.actingSeatId}`)
+      }
+
+      expect(guard).toBeLessThan(250)
+      expect(state.phase).toBe('hand-complete')
+      expect(state.review).toBeDefined()
+      expect(tableChipTotal(state)).toBe(startingTableTotal)
+      expect(state.review?.publicActions).toHaveLength(state.actionSeq)
+      expect(state.review?.bankrollAfter).toBe(state.bankroll)
+      expect(state.review?.ratingAfter).toBe(state.rating)
+      expect(state.history.length).toBe(Math.min(hand + 1, 12))
+      expect(fs.existsSync(path.join(tempDir, 'bridge/current-turn.json'))).toBe(false)
+      expect(fs.existsSync(path.join(tempDir, 'bridge/latest-hand.json'))).toBe(true)
+
+      for (const seat of state.seats) {
+        expect(Number.isInteger(seat.stack)).toBe(true)
+        expect(Number.isInteger(seat.bet)).toBe(true)
+        expect(seat.stack).toBeGreaterThanOrEqual(0)
+        expect(seat.bet).toBe(0)
+      }
+
+      state = service.startNewHand()
+      expect(state.phase).toBe('playing')
+      for (const seat of state.seats) {
+        expect(Number.isInteger(seat.stack)).toBe(true)
+        expect(Number.isInteger(seat.bet)).toBe(true)
+        expect(seat.stack).toBeGreaterThanOrEqual(0)
+        expect(seat.bet).toBeGreaterThanOrEqual(0)
+      }
     }
   })
 })
