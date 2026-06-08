@@ -36,12 +36,31 @@ export function buildReviewMessage(packet: LatestHandPacket) {
   return `${result}: ${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} Elo. Want the quick review? I saw ${userLine}. ${plan.focusSpot}`
 }
 
+export function buildAcceptedReviewMessage(packet: LatestHandPacket) {
+  const plan = buildCoachingPlan(packet)
+  const result = packet.result.bankrollDelta > 0 ? 'you booked the pot' : packet.result.bankrollDelta < 0 ? 'this one cost chips' : 'this one landed flat'
+  const showdown = packet.showdown?.winningHandName
+    ? `Result note: ${packet.showdown.winningHandName}.`
+    : 'Result note: the hand ended before a full showdown.'
+
+  return [
+    `Quick review: ${result} (${formatDelta(packet.result.bankrollDelta)} chips, ${formatDelta(packet.result.ratingDelta)} Elo).`,
+    `What went right: ${plan.didWell}`,
+    `What I would revisit: ${plan.focusSpot}`,
+    `Adjustment: ${plan.adjustment}`,
+    showdown
+  ].join('\n')
+}
+
 export function buildCoachingPlan(packet: LatestHandPacket) {
   const userActions = packet.publicActions.filter((action) => action.seatId === 'user')
   const folded = userActions.some((action) => action.action === 'fold')
   const investedAction = [...userActions].reverse().find((action) => action.amount && action.amount > 0)
   const lastUserAction = userActions.at(-1)
-  const biggestPressure = [...packet.publicActions]
+  const visiblePressureActions = packet.publicActions.filter((action) =>
+    action.seatId !== 'user' && action.amount && (!lastUserAction || action.seq <= lastUserAction.seq)
+  )
+  const biggestPressure = [...visiblePressureActions]
     .filter((action) => action.seatId !== 'user' && action.amount)
     .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))[0]
   const resultLabel = packet.result.bankrollDelta > 0 ? 'won' : packet.result.bankrollDelta < 0 ? 'lost' : 'split'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LatestHandPacket } from '../src/shared/contracts'
-import { buildCoachingPlan, buildReviewBrief, buildReviewMessage } from '../src/shared/review-copy'
+import { buildAcceptedReviewMessage, buildCoachingPlan, buildReviewBrief, buildReviewMessage } from '../src/shared/review-copy'
 
 const packet: LatestHandPacket = {
   schemaVersion: 1,
@@ -54,6 +54,18 @@ describe('review copy', () => {
     expect(message).toContain('focus spot')
   })
 
+  it('builds an accepted Uplift review with right, revisit, and adjustment sections', () => {
+    const message = buildAcceptedReviewMessage(packet)
+
+    expect(message).toContain('Quick review:')
+    expect(message).toContain('What went right:')
+    expect(message).toContain('What I would revisit:')
+    expect(message).toContain('Adjustment:')
+    expect(message).toContain('flop fold')
+    expect(message).toContain('Last player standing')
+    expect(message).not.toContain('Want the quick review?')
+  })
+
   it('does not call a break-even hand a win', () => {
     const message = buildReviewMessage({
       ...packet,
@@ -72,5 +84,21 @@ describe('review copy', () => {
     expect(plan.didWell).toContain('let the hand go')
     expect(plan.adjustment).toContain('before calling pressure')
     expect(plan.reviewScript[0]).toContain('Want the quick review?')
+  })
+
+  it('does not blame an early fold on pressure that happened after the user folded', () => {
+    const plan = buildCoachingPlan({
+      ...packet,
+      publicActions: [
+        { seq: 1, seatId: 'atlas', name: 'Atlas', street: 'preflop', action: 'call', amount: 100, at: '2026-06-08T14:00:01.000Z' },
+        { seq: 2, seatId: 'user', name: 'Ali', street: 'preflop', action: 'fold', at: '2026-06-08T14:00:02.000Z' },
+        { seq: 3, seatId: 'pip', name: 'Pip', street: 'flop', action: 'bet', amount: 2400, at: '2026-06-08T14:00:03.000Z' }
+      ]
+    })
+
+    expect(plan.focusSpot).toContain('preflop fold')
+    expect(plan.focusSpot).toContain('Atlas')
+    expect(plan.focusSpot).toContain('100')
+    expect(plan.focusSpot).not.toContain('2,400')
   })
 })

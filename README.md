@@ -60,9 +60,10 @@ Codex can prepare the hand review with:
 
 ```bash
 npm run game:review
+npm run game:review -- --mode accepted
 ```
 
-Use that packet to ask in the Codex chat whether the player wants the review, then discuss the hand there.
+Use the default `game:review` output to ask in this Codex chat whether the player wants the review. If Ali says yes, run `npm run game:review -- --mode accepted` for a ready Uplift review with what went right, what to revisit, and the next-hand adjustment. Keep that discussion in chat; the preview stays the poker table.
 
 If Ali wants to skip the review and keep playing, Codex can start the next hand after a completed hand with:
 

@@ -58,19 +58,49 @@ describe('game:review CLI', () => {
       encoding: 'utf8'
     })
     const output = JSON.parse(stdout) as {
+      mode: string
+      reviewOffer: string
+      acceptedReview: string
+      suggestedMessage: string
       coachingPlan: {
         focusSpot: string
         didWell: string
         adjustment: string
         reviewScript: string[]
       }
-      protocol: { destination: string }
+      protocol: { destination: string; reviewFlow: string }
     }
 
+    expect(output.mode).toBe('offer')
     expect(output.protocol.destination).toBe('Codex chat')
+    expect(output.protocol.reviewFlow).toContain('--mode accepted')
+    expect(output.reviewOffer).toContain('Want the quick review?')
+    expect(output.acceptedReview).toContain('What went right:')
+    expect(output.suggestedMessage).toBe(output.reviewOffer)
     expect(output.coachingPlan.focusSpot).toContain('flop fold')
     expect(output.coachingPlan.didWell).toContain('let the hand go')
     expect(output.coachingPlan.adjustment).toContain('before calling pressure')
     expect(output.coachingPlan.reviewScript[0]).toContain('Want the quick review?')
+  })
+
+  it('emits the accepted review script after Ali opts in', () => {
+    const stdout = execFileSync(process.execPath, ['node_modules/tsx/dist/cli.mjs', 'src/cli/game-review.ts', '--file', packetPath, '--mode', 'accepted'], {
+      cwd: repoRoot,
+      encoding: 'utf8'
+    })
+    const output = JSON.parse(stdout) as {
+      mode: string
+      suggestedMessage: string
+      reviewOffer: string
+      acceptedReview: string
+    }
+
+    expect(output.mode).toBe('accepted')
+    expect(output.suggestedMessage).toBe(output.acceptedReview)
+    expect(output.suggestedMessage).toContain('Quick review:')
+    expect(output.suggestedMessage).toContain('What went right:')
+    expect(output.suggestedMessage).toContain('What I would revisit:')
+    expect(output.suggestedMessage).toContain('Adjustment:')
+    expect(output.suggestedMessage).not.toBe(output.reviewOffer)
   })
 })
