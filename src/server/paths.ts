@@ -4,17 +4,24 @@ import { fileURLToPath } from 'node:url'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
-export const dataDir = process.env.CODEX_POKER_DATA_DIR
-  ? path.resolve(process.env.CODEX_POKER_DATA_DIR)
-  : path.join(rootDir, 'data')
+export function getDataDir() {
+  return process.env.CODEX_POKER_DATA_DIR
+    ? path.resolve(process.env.CODEX_POKER_DATA_DIR)
+    : path.join(rootDir, 'data')
+}
 
-export const bridgeDir = path.join(dataDir, 'bridge')
-export const dbPath = process.env.CODEX_POKER_DB_PATH
-  ? path.resolve(process.env.CODEX_POKER_DB_PATH)
-  : path.join(dataDir, 'codex-poker.sqlite')
+export function getBridgeDir() {
+  return path.join(getDataDir(), 'bridge')
+}
+
+export function getDbPath() {
+  return process.env.CODEX_POKER_DB_PATH
+    ? path.resolve(process.env.CODEX_POKER_DB_PATH)
+    : path.join(getDataDir(), 'codex-poker.sqlite')
+}
 
 export function ensureDataDirs() {
-  fs.mkdirSync(bridgeDir, { recursive: true })
+  fs.mkdirSync(getBridgeDir(), { recursive: true })
 }
 
 export function pathFromRoot(...parts: string[]) {

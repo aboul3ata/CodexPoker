@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { HandHistoryPoint, ReviewSnapshot, SeatId } from '../shared/contracts'
-import { dbPath, ensureDataDirs } from './paths'
+import { ensureDataDirs, getDbPath } from './paths'
 
 export type PlayerProfile = {
   bankroll: number
@@ -27,7 +27,7 @@ const defaultProfile: PlayerProfile = {
 export class Storage {
   private db: Database.Database
 
-  constructor(filePath = dbPath) {
+  constructor(filePath = getDbPath()) {
     ensureDataDirs()
     fs.mkdirSync(path.dirname(filePath), { recursive: true })
     this.db = new Database(filePath)

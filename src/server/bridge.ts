@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { CurrentTurnPacket, LastErrorPacket, LatestHandPacket } from '../shared/contracts'
-import { bridgeDir, ensureDataDirs } from './paths'
+import { ensureDataDirs, getBridgeDir } from './paths'
 
 function writeJsonAtomic(filePath: string, value: unknown) {
   ensureDataDirs()
@@ -11,23 +11,23 @@ function writeJsonAtomic(filePath: string, value: unknown) {
 }
 
 export function writeCurrentTurn(packet: CurrentTurnPacket) {
-  writeJsonAtomic(path.join(bridgeDir, 'current-turn.json'), packet)
+  writeJsonAtomic(path.join(getBridgeDir(), 'current-turn.json'), packet)
 }
 
 export function clearCurrentTurn() {
-  const filePath = path.join(bridgeDir, 'current-turn.json')
+  const filePath = path.join(getBridgeDir(), 'current-turn.json')
   fs.rmSync(filePath, { force: true })
 }
 
 export function writeLatestHand(packet: LatestHandPacket) {
-  writeJsonAtomic(path.join(bridgeDir, 'latest-hand.json'), packet)
+  writeJsonAtomic(path.join(getBridgeDir(), 'latest-hand.json'), packet)
 }
 
 export function writeLastError(packet: LastErrorPacket) {
-  writeJsonAtomic(path.join(bridgeDir, 'last-error.json'), packet)
+  writeJsonAtomic(path.join(getBridgeDir(), 'last-error.json'), packet)
 }
 
 export function clearLastError() {
-  const filePath = path.join(bridgeDir, 'last-error.json')
+  const filePath = path.join(getBridgeDir(), 'last-error.json')
   fs.rmSync(filePath, { force: true })
 }

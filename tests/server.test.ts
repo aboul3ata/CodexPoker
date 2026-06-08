@@ -8,14 +8,22 @@ import { Storage } from '../src/server/storage'
 
 let app: ReturnType<typeof createServer>
 let tempDir: string
+let previousDataDir: string | undefined
 
 beforeEach(() => {
+  previousDataDir = process.env.CODEX_POKER_DATA_DIR
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-poker-server-test-'))
+  process.env.CODEX_POKER_DATA_DIR = tempDir
   app = createServer(new GameService(new Storage(path.join(tempDir, 'server.sqlite'))))
 })
 
 afterEach(async () => {
   await app.close()
+  if (previousDataDir) {
+    process.env.CODEX_POKER_DATA_DIR = previousDataDir
+  } else {
+    delete process.env.CODEX_POKER_DATA_DIR
+  }
   fs.rmSync(tempDir, { recursive: true, force: true })
 })
 

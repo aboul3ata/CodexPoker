@@ -7,7 +7,7 @@ import { actionRequestSchema, sayRequestSchema } from '../shared/contracts'
 import { writeLastError } from './bridge'
 import { DomainError, MalformedCommandError } from './errors'
 import { GameService } from './game-service'
-import { dataDir, ensureDataDirs, pathFromRoot } from './paths'
+import { ensureDataDirs, getDataDir, pathFromRoot } from './paths'
 
 export function createServer(game = new GameService()): FastifyInstance {
   const app = Fastify({ logger: false })
@@ -93,7 +93,7 @@ export async function startServer(port = Number(process.env.PORT ?? 8797)) {
   ensureDataDirs()
   const app = createServer()
   await app.listen({ host: '127.0.0.1', port })
-  fs.writeFileSync(path.join(dataDir, 'server.json'), `${JSON.stringify({ port, url: `http://127.0.0.1:${port}` }, null, 2)}\n`)
+  fs.writeFileSync(path.join(getDataDir(), 'server.json'), `${JSON.stringify({ port, url: `http://127.0.0.1:${port}` }, null, 2)}\n`)
   console.log(`CodexPoker server listening on http://127.0.0.1:${port}`)
   return app
 }

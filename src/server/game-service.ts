@@ -94,6 +94,7 @@ export class GameService {
   getSnapshot(): GameSnapshot {
     const actingSeatId = this.getActingSeat()
     const isComplete = Boolean(this.review)
+    this.writeBridgeIfNeeded()
     return {
       schemaVersion: 1,
       handId: this.handId,

@@ -9,14 +9,22 @@ import { Storage } from '../src/server/storage'
 
 let service: GameService
 let tempDir: string
+let previousDataDir: string | undefined
 
 beforeEach(() => {
+  previousDataDir = process.env.CODEX_POKER_DATA_DIR
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-poker-test-'))
+  process.env.CODEX_POKER_DATA_DIR = tempDir
   service = new GameService(new Storage(path.join(tempDir, 'test.sqlite')))
 })
 
 afterEach(() => {
   service.close()
+  if (previousDataDir) {
+    process.env.CODEX_POKER_DATA_DIR = previousDataDir
+  } else {
+    delete process.env.CODEX_POKER_DATA_DIR
+  }
   fs.rmSync(tempDir, { recursive: true, force: true })
 })
 
@@ -50,7 +58,7 @@ describe('GameService', () => {
     expect(state.actingSeatId).toBe('uplift')
     expect(state.bridgeStatus).toBe('waiting-for-codex')
 
-    const packet = JSON.parse(fs.readFileSync('data/bridge/current-turn.json', 'utf8')) as CurrentTurnPacket
+    const packet = JSON.parse(fs.readFileSync(path.join(tempDir, 'bridge/current-turn.json'), 'utf8')) as CurrentTurnPacket
     expect(packet.seat).toBe('uplift')
     expect(packet.turnToken).toBe(state.turnToken)
     expect(packet.holeCards).toHaveLength(2)
@@ -59,11 +67,27 @@ describe('GameService', () => {
     expect(JSON.stringify(packet)).not.toContain('"seed"')
   })
 
+  it('repairs a missing current-turn packet while Uplift is active', () => {
+    let state = service.getSnapshot()
+    state = userAction(state)
+    const packetPath = path.join(tempDir, 'bridge/current-turn.json')
+
+    expect(state.actingSeatId).toBe('uplift')
+    fs.rmSync(packetPath, { force: true })
+    expect(fs.existsSync(packetPath)).toBe(false)
+
+    service.getSnapshot()
+
+    const packet = JSON.parse(fs.readFileSync(packetPath, 'utf8')) as CurrentTurnPacket
+    expect(packet.handId).toBe(state.handId)
+    expect(packet.turnToken).toBe(state.turnToken)
+  })
+
   it('clears the current-turn packet after Uplift acts', () => {
     let state = service.getSnapshot()
     state = userAction(state)
     expect(state.actingSeatId).toBe('uplift')
-    expect(fs.existsSync('data/bridge/current-turn.json')).toBe(true)
+    expect(fs.existsSync(path.join(tempDir, 'bridge/current-turn.json'))).toBe(true)
 
     const action = state.legalActions.find((item) => item.kind === 'check') ?? state.legalActions[0]
     state = service.submitAction({
@@ -74,7 +98,7 @@ describe('GameService', () => {
     })
 
     if (state.actingSeatId !== 'uplift') {
-      expect(fs.existsSync('data/bridge/current-turn.json')).toBe(false)
+      expect(fs.existsSync(path.join(tempDir, 'bridge/current-turn.json'))).toBe(false)
     }
   })
 
@@ -107,8 +131,8 @@ describe('GameService', () => {
     expect(state.history[0].bankroll).toBe(state.bankroll)
     expect(state.history[0].rating).toBe(state.rating)
     expect(state.review?.publicActions.some((action) => action.seatId === 'user' && action.action === 'fold')).toBe(true)
-    expect(fs.existsSync('data/bridge/latest-hand.json')).toBe(true)
-    const packet = JSON.parse(fs.readFileSync('data/bridge/latest-hand.json', 'utf8')) as LatestHandPacket
+    expect(fs.existsSync(path.join(tempDir, 'bridge/latest-hand.json'))).toBe(true)
+    const packet = JSON.parse(fs.readFileSync(path.join(tempDir, 'bridge/latest-hand.json'), 'utf8')) as LatestHandPacket
     expect(packet.result.bankrollAfter).toBe(state.bankroll)
     expect(packet.result.ratingAfter).toBe(state.rating)
     expect(packet.lesson).toBe(state.review?.lesson)

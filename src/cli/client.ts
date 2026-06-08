@@ -9,12 +9,18 @@ type ApiResult = {
 }
 
 function getServerUrl() {
-  const serverFile = path.resolve('data/server.json')
+  const serverFile = path.join(getDataDir(), 'server.json')
   if (fs.existsSync(serverFile)) {
     const parsed = JSON.parse(fs.readFileSync(serverFile, 'utf8')) as { url?: string }
     if (parsed.url) return parsed.url
   }
   return process.env.CODEX_POKER_SERVER_URL ?? 'http://127.0.0.1:8797'
+}
+
+function getDataDir() {
+  return process.env.CODEX_POKER_DATA_DIR
+    ? path.resolve(process.env.CODEX_POKER_DATA_DIR)
+    : path.resolve('data')
 }
 
 export async function postApi(pathname: string, body: unknown): Promise<ApiResult> {
