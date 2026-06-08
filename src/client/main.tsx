@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { Bot, ChevronRight, MessageCircle, RotateCcw, Sparkles, UserRound, UsersRound, X, Zap } from 'lucide-react'
-import type { Card, GameSnapshot, HandHistoryPoint, LegalAction, PublicAction, ReviewSnapshot, SeatId, SeatView } from '../shared/contracts'
+import type { Card, GameSnapshot, LegalAction, PublicAction, SeatId, SeatView } from '../shared/contracts'
 import './styles.css'
 
 const avatarBySeat: Record<SeatId, string> = {
@@ -102,8 +102,6 @@ function App() {
             <p>{state.sessionGoal}</p>
           </div>
         </div>
-        <Stat label="Bankroll" value={formatChips(state.bankroll)} />
-        <Stat label="Elo" value={String(state.rating)} />
         <div className={`bridge-pill ${state.bridgeStatus}`}>
           <Zap size={16} />
           {bridgeLabel(state.bridgeStatus)}
@@ -129,7 +127,7 @@ function App() {
         />
       ) : null}
 
-      <section className={`play-layout ${state.phase}`}>
+      <section className="play-layout">
         <section className="table-column" aria-label="Poker table">
           {error ? <div className="error-banner" role="alert">{error}</div> : null}
           {state.tableNotice ? <div className="table-notice">{state.tableNotice}</div> : null}
@@ -145,7 +143,6 @@ function App() {
             onNextHand={() => post('/api/new-hand')}
           />
         </section>
-        <ReviewPanel state={state} onNextHand={() => post('/api/new-hand')} />
       </section>
 
       <div className="sr-live" aria-live="polite">
@@ -215,15 +212,6 @@ async function fetchState(): Promise<GameSnapshot> {
   const response = await fetch('/api/state')
   const payload = await response.json()
   return payload.state
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="stat">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  )
 }
 
 function LineupDrawer({
@@ -406,7 +394,7 @@ function SeatKindIcon({ kind }: { kind: SeatView['kind'] }) {
 function seatKindLabel(kind: SeatView['kind']) {
   return {
     bot: 'Local bot',
-    codex: 'Codex chat seat',
+    codex: 'Codex seat',
     human: 'Human seat'
   }[kind]
 }
@@ -516,7 +504,7 @@ function ActionFooter({
           Following table action...
         </div>
       ) : isUpliftTurn ? (
-        <UpliftBridgePrompt state={state} />
+        <div className="waiting-copy">Codexxyyy is thinking.</div>
       ) : (
         <div className="waiting-copy">Local bots are moving.</div>
       )}
@@ -524,25 +512,6 @@ function ActionFooter({
         <button className="secondary-action" onClick={() => onFastForward()} type="button">Fast-fold result</button>
       ) : null}
     </footer>
-  )
-}
-
-function UpliftBridgePrompt({ state }: { state: GameSnapshot }) {
-  return (
-    <section className="codex-turn-card" aria-label="Codex chat turn">
-      <div className="codex-turn-avatar">
-        <img src={avatarBySeat.uplift} alt="" />
-      </div>
-      <div className="codex-turn-copy">
-        <span>Codexxyyy turn</span>
-        <strong>Codexxyyy should act now.</strong>
-        <p>{buildUpliftBridgeLine(state)}</p>
-      </div>
-      <div className="codex-command-stack" aria-label="Codex turn commands">
-        <code>npm run --silent game:loop</code>
-        <code>npm run --silent game:codex</code>
-      </div>
-    </section>
   )
 }
 
@@ -630,156 +599,6 @@ function UserActionPanel({
   )
 }
 
-function ReviewPanel({ state, onNextHand }: { state: GameSnapshot; onNextHand: () => void }) {
-  const review = state.review
-  return (
-    <aside className={`review-panel ${review ? 'active' : ''}`} aria-label="Hand review">
-      <div className="lane-title">
-        <Sparkles size={18} />
-        <span>Codexxyyy review</span>
-      </div>
-      {review ? (
-        <>
-          <ReviewMoment review={review} />
-          <div className="result-card">
-            <span>{review.bankrollDelta >= 0 ? '+' : ''}{formatChips(review.bankrollDelta)}</span>
-            <strong>{review.ratingDelta >= 0 ? '+' : ''}{review.ratingDelta} Elo</strong>
-          </div>
-          <h2>{review.winningHandName}</h2>
-          <p>{review.lesson}</p>
-          <button className="primary-action wide" onClick={() => onNextHand()} type="button">Next hand</button>
-          <CodexReviewPrompt />
-          <div className="timeline">
-            {review.publicActions.slice(-8).map((action) => (
-              <div className={action.seatId === 'user' ? 'hot' : ''} key={action.seq}>
-                <span>{action.street}</span>
-                <b>{action.name} {action.action}</b>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <>
-          <h2>One lesson after each hand.</h2>
-          <p>Codexxyyy reviews decisions from what was visible at the time, then gets out of your way.</p>
-          <div className="mini-goal">{state.tendencySummary}</div>
-        </>
-      )}
-      <StackTrail history={state.history} bankroll={state.bankroll} rating={state.rating} />
-    </aside>
-  )
-}
-
-function CodexReviewPrompt() {
-  return (
-    <section className="codex-review-card" aria-label="Codex review loop">
-      <div className="review-loop-avatar">
-        <img src={avatarBySeat.uplift} alt="" />
-      </div>
-      <div className="review-loop-copy">
-        <span>Chat review</span>
-        <strong>Ask Codexxyyy here.</strong>
-        <p>Use the loop guide here, then choose review or next hand.</p>
-      </div>
-      <code>npm run --silent game:codex</code>
-    </section>
-  )
-}
-
-function ReviewMoment({ review }: { review: ReviewSnapshot }) {
-  const outcome = review.bankrollDelta > 0 ? 'win' : review.bankrollDelta < 0 ? 'loss' : 'even'
-  const label = outcome === 'win' ? 'Pot collected' : outcome === 'loss' ? 'Lesson banked' : 'Clean split'
-  const line = review.winningSeatIds.includes('user')
-    ? 'You found the line'
-    : review.winningSeatIds.includes('uplift')
-      ? 'Codexxyyy got there'
-      : 'Table result'
-
-  return (
-    <div className={`review-moment ${outcome}`} aria-label={`${label}: ${line}`}>
-      <div className="moment-avatar">
-        <img src={avatarBySeat.uplift} alt="" />
-      </div>
-      <div className="moment-copy">
-        <span>{label}</span>
-        <strong>{line}</strong>
-      </div>
-      {[0, 1, 2].map((chip) => (
-        <img
-          aria-hidden="true"
-          className={`burst-chip chip-${chip}`}
-          key={chip}
-          src="/assets/generated/chip.svg"
-          alt=""
-        />
-      ))}
-    </div>
-  )
-}
-
-function StackTrail({
-  history,
-  bankroll,
-  rating
-}: {
-  history: HandHistoryPoint[]
-  bankroll: number
-  rating: number
-}) {
-  const values = history.map((point) => point.bankroll)
-  const min = Math.min(...values, bankroll)
-  const max = Math.max(...values, bankroll)
-  const latest = history.at(-1)
-  const bars = history.length ? history : [{
-    handId: 'starting-stack',
-    completedAt: '',
-    bankroll,
-    bankrollDelta: 0,
-    rating,
-    ratingDelta: 0,
-    winningSeatIds: []
-  }]
-
-  return (
-    <section className="stack-trail" aria-label="Balance history">
-      <div className="trail-head">
-        <span>Stack trail</span>
-        <strong>{history.length ? `${history.length} hands` : 'Opening stack'}</strong>
-      </div>
-      <div
-        className={`sparkline ${history.length ? '' : 'empty'} ${bars.length === 1 ? 'solo' : ''}`}
-        role="img"
-        aria-label={`Current bankroll ${formatChips(bankroll)}, Elo ${rating}`}
-      >
-        {bars.map((point) => (
-          <span
-            className={point.bankrollDelta >= 0 ? 'up' : 'down'}
-            key={point.handId}
-            style={{ height: `${sparkHeight(point.bankroll, min, max)}%` }}
-            title={`${formatDelta(point.bankrollDelta)} chips`}
-          />
-        ))}
-      </div>
-      <div className="trail-metrics">
-        <div>
-          <span>Bankroll</span>
-          <b>{formatChips(bankroll)}</b>
-        </div>
-        <div>
-          <span>Elo</span>
-          <b>{rating}</b>
-        </div>
-      </div>
-      {latest ? (
-        <div className={`latest-swing ${latest.bankrollDelta >= 0 ? 'up' : 'down'}`}>
-          <span>Latest hand</span>
-          <b>{formatDelta(latest.bankrollDelta)} chips</b>
-        </div>
-      ) : null}
-    </section>
-  )
-}
-
 function actionLabel(action: LegalAction) {
   if (action.kind === 'call') return `Call ${formatChips(action.toCall ?? 0)}`
   if (action.kind === 'bet') return `Bet ${formatChips(action.min ?? 0)}`
@@ -825,12 +644,6 @@ function buildAmountPresets(action: LegalAction, pot: number) {
     })
 }
 
-function buildUpliftBridgeLine(state: GameSnapshot) {
-  const lastAction = state.publicActions.at(-1)
-  if (!lastAction) return 'The preview stays table-only; Codexxyyy keeps private cards inside the bridge.'
-  return `${lastAction.name} ${formatActionKind(lastAction.action)}${lastAction.amount ? ` ${formatChips(lastAction.amount)}` : ''}. Codexxyyy replies here with public table talk only.`
-}
-
 function clampAmount(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) return min
   return Math.max(min, Math.min(max, Math.round(value / 50) * 50))
@@ -848,15 +661,6 @@ function formatChips(value: number) {
   return new Intl.NumberFormat('en-US').format(value)
 }
 
-function formatDelta(value: number) {
-  return `${value >= 0 ? '+' : ''}${formatChips(value)}`
-}
-
-function sparkHeight(value: number, min: number, max: number) {
-  if (max === min) return 52
-  return 28 + ((value - min) / (max - min)) * 60
-}
-
 function suitSymbol(suit: Card['suit']) {
   return { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[suit]
 }
@@ -866,7 +670,7 @@ function bridgeLabel(status: GameSnapshot['bridgeStatus']) {
     'waiting-for-codex': 'Codexxyyy to act',
     'local-bots-moving': 'Bots moving',
     'user-to-act': 'Your turn',
-    'hand-complete': 'Review ready'
+    'hand-complete': 'Hand complete'
   }[status]
 }
 

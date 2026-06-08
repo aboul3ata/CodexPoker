@@ -3,13 +3,19 @@ import { expect, test } from '@playwright/test'
 test('renders the playable CodexPoker table', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'CodexPoker' })).toBeVisible()
-  await expect(page.getByLabel('Session status').getByText('Elo', { exact: true })).toBeVisible()
+  const sessionStatus = page.getByLabel('Session status')
+  await expect(sessionStatus.getByText('Bankroll', { exact: true })).toHaveCount(0)
+  await expect(sessionStatus.getByText('Elo', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('region', { name: 'Poker table' })).toBeVisible()
   await expect(page.getByText(/Table talk/)).toHaveCount(0)
   await expect(page.getByLabel('Banter')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
-  await expect(page.getByText('Codexxyyy review', { exact: true })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Balance history' })).toBeVisible()
+  await expect(page.getByText('Codexxyyy review', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Hand review' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Balance history' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Codex review loop' })).toHaveCount(0)
+  await expect(page.getByText('npm run --silent game:loop')).toHaveCount(0)
+  await expect(page.getByText('npm run --silent game:codex')).toHaveCount(0)
   await expect(page.getByRole('region', { name: 'Table beats' })).toBeVisible()
   const tableBox = await page.locator('.table-felt').boundingBox()
   const railBox = await page.getByRole('region', { name: 'Table beats' }).boundingBox()
@@ -55,12 +61,12 @@ test('supports a legal user action from the preview', async ({ page, request }) 
   await expect(actionButton).toBeVisible()
   await actionButton.click()
 
-  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy turn|Fold|Call|Check|Bet|Raise|Review ready|Local bots|Simulate to result|Fast-fold result|Next hand/)
+  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy is thinking|Fold|Call|Check|Bet|Raise|Hand complete|Local bots|Simulate to result|Fast-fold result|Next hand/)
   await expect(page.locator('.action-rail .action-beat')).not.toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
 })
 
-test('routes Codexxyyy turns to this Codex chat instead of preview controls', async ({ page, request }) => {
+test('keeps Codexxyyy turns out of in-app chat UI', async ({ page, request }) => {
   await page.goto('/')
   let state = (await (await request.post('/api/new-hand')).json()).state
 
@@ -80,13 +86,12 @@ test('routes Codexxyyy turns to this Codex chat instead of preview controls', as
   expect(state.actingSeatId).toBe('uplift')
   await page.reload()
 
-  const codexTurn = page.getByRole('region', { name: 'Codex chat turn' })
-  await expect(codexTurn).toBeVisible()
-  await expect(codexTurn.getByText('Codexxyyy should act now.')).toBeVisible()
-  await expect(codexTurn.getByText('npm run --silent game:loop')).toBeVisible()
-  await expect(codexTurn.getByText('npm run --silent game:codex')).toBeVisible()
-  await expect(codexTurn.getByText('npm run --silent game:play')).toHaveCount(0)
-  await expect(page.getByText('Codexxyyy is thinking.')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Codex chat turn' })).toHaveCount(0)
+  await expect(page.getByText('Codexxyyy should act now.')).toHaveCount(0)
+  await expect(page.getByText('npm run --silent game:loop')).toHaveCount(0)
+  await expect(page.getByText('npm run --silent game:codex')).toHaveCount(0)
+  await expect(page.getByText('npm run --silent game:play')).toHaveCount(0)
+  await expect(page.locator('.action-footer')).toContainText('Codexxyyy is thinking.')
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
 })
 
@@ -208,7 +213,7 @@ test('lets the user size a bet or raise from the preview', async ({ page, reques
   expect(nextState.publicActions.some((action: { seatId: string; action: string; amount?: number }) =>
     action.seatId === 'user' && action.action === wager.kind && action.amount === amount
   )).toBe(true)
-  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy turn|Fold|Call|Check|Bet|Raise|Review ready|Local bots/)
+  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy is thinking|Fold|Call|Check|Bet|Raise|Hand complete|Local bots/)
 })
 
 function trailingBotRun(actions: Array<{ seatId: string; street: string; name: string }>) {
@@ -237,7 +242,7 @@ test('keeps the table usable on mobile', async ({ page }) => {
   await expect(page.locator('.action-footer')).toBeVisible()
 })
 
-test('offers a Codex review command after a completed hand', async ({ page, request }) => {
+test('keeps completed-hand review data internal to the Codex chat loop', async ({ page, request }) => {
   await page.goto('/')
   let state = (await (await request.post('/api/new-hand')).json()).state
 
@@ -271,27 +276,21 @@ test('offers a Codex review command after a completed hand', async ({ page, requ
   expect(state.board).toEqual(state.review.board)
   expect(state.pot).toBe(state.review.finalPot)
   await page.reload()
-  await expect(page.getByText('Codexxyyy review', { exact: true })).toBeVisible()
-  const reviewMoment = page.locator('.review-moment')
-  await expect(reviewMoment).toBeVisible()
-  const reviewMomentBox = await reviewMoment.boundingBox()
-  const viewport = page.viewportSize()
-  expect(reviewMomentBox?.y).toBeLessThan(viewport?.height ?? 900)
-  const reviewNextHandBox = await page.locator('.review-panel .primary-action.wide').boundingBox()
-  expect(reviewNextHandBox?.y).toBeLessThan(viewport?.height ?? 900)
-  await expect(page.getByText(state.review.winningHandName).first()).toBeVisible()
-  await expect(page.getByText(state.review.lesson).first()).toBeVisible()
-  const codexReview = page.getByRole('region', { name: 'Codex review loop' })
-  await expect(codexReview).toBeVisible()
-  await expect(codexReview.getByText('Ask Codexxyyy here.')).toBeVisible()
-  await expect(codexReview.getByText('npm run --silent game:codex')).toBeVisible()
+  await expect(page.getByText('Codexxyyy review', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Hand review' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Codex review loop' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Balance history' })).toHaveCount(0)
+  await expect(page.getByText(state.review.winningHandName).first()).toHaveCount(0)
+  await expect(page.getByText(state.review.lesson).first()).toHaveCount(0)
   await expect(page.getByText('Review packet is ready')).toHaveCount(0)
   await expect(page.getByText('npm run --silent game:review')).toHaveCount(0)
+  await expect(page.getByText('npm run --silent game:codex')).toHaveCount(0)
+  await expect(page.locator('.action-footer')).toContainText('Next hand')
   if (state.board.length > 0) {
     await expect(page.locator('.community-cards .playing-card.empty')).toHaveCount(5 - state.board.length)
   }
 
-  await page.locator('.review-panel .primary-action.wide').click()
+  await page.getByRole('button', { name: 'Next hand' }).click()
   const freshState = (await (await request.get('/api/state')).json()).state
   expect(freshState.phase).toBe('playing')
   expect(freshState.review).toBeUndefined()
