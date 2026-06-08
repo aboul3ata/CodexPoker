@@ -53,6 +53,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
       mode: 'review-offer',
       speakAs: 'Uplift',
       publicTableStory: buildPublicTableStory(state),
+      visibleLineup: buildVisibleLineup(state),
       tableTalkCue: 'Ask Ali in this Codex chat if they want the quick hand review or want to shuffle the next hand.',
       privateGuardrails: [
         'Use npm run --silent game:review only after Ali wants the review.',
@@ -67,6 +68,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
       mode: 'uplift-to-act',
       speakAs: 'Uplift',
       publicTableStory: buildPublicTableStory(state),
+      visibleLineup: buildVisibleLineup(state),
       tableTalkCue: 'Banter here as Uplift using only public board/action context, then act with game:act.',
       privateGuardrails: [
         'You may use codexTurn.holeCards privately for the poker decision.',
@@ -82,6 +84,7 @@ function buildCodexChatGuide(state: GameSnapshot) {
       mode: 'ali-to-act',
       speakAs: 'Uplift',
       publicTableStory: buildPublicTableStory(state),
+      visibleLineup: buildVisibleLineup(state),
       tableTalkCue: 'Wait for Ali to act in the preview; light banter in this chat is fine, but do not submit a user action.',
       privateGuardrails: [
         'Do not infer or ask to see Ali hole cards beyond what the preview shows to the user.',
@@ -95,11 +98,28 @@ function buildCodexChatGuide(state: GameSnapshot) {
     mode: 'bots-moving',
     speakAs: 'Uplift',
     publicTableStory: buildPublicTableStory(state),
+    visibleLineup: buildVisibleLineup(state),
     tableTalkCue: 'Local bots are resolving the table state; wait for the next user or Uplift decision point.',
     privateGuardrails: [
       'Refresh with npm run --silent game:state before speaking as if a new decision is available.'
     ]
   }
+}
+
+function buildVisibleLineup(state: GameSnapshot) {
+  return state.seats.map((seat) => ({
+    seatId: seat.seatId,
+    name: seat.name,
+    providerLabel: seat.providerLabel,
+    modelLabel: seat.modelLabel,
+    tableRole: seat.tableRole,
+    personality: seat.personality,
+    stack: seat.stack,
+    bet: seat.bet,
+    status: seat.status,
+    isToAct: seat.isToAct,
+    isFolded: seat.isFolded
+  }))
 }
 
 function buildPublicTableStory(state: GameSnapshot) {

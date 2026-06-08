@@ -87,6 +87,74 @@ const seatMeta: Record<SeatId, SeatMeta> = {
   }
 }
 
+type AgentActionProfile = {
+  checkBias: number
+  callStackFraction: number
+  looseCallStackFraction: number
+  raiseBias: number
+  betBias: number
+  pressureLimit: number
+  wagerFraction: number
+}
+
+const defaultActionProfile: AgentActionProfile = {
+  checkBias: 0.76,
+  callStackFraction: 0.08,
+  looseCallStackFraction: 0.14,
+  raiseBias: 0.18,
+  betBias: 0.22,
+  pressureLimit: 2,
+  wagerFraction: 0.05
+}
+
+const actionProfiles: Partial<Record<SeatId, AgentActionProfile>> = {
+  uplift: {
+    checkBias: 0.68,
+    callStackFraction: 0.1,
+    looseCallStackFraction: 0.16,
+    raiseBias: 0.22,
+    betBias: 0.26,
+    pressureLimit: 2,
+    wagerFraction: 0.08
+  },
+  pip: {
+    checkBias: 0.9,
+    callStackFraction: 0.12,
+    looseCallStackFraction: 0.2,
+    raiseBias: 0.04,
+    betBias: 0.08,
+    pressureLimit: 1,
+    wagerFraction: 0.02
+  },
+  nova: {
+    checkBias: 0.62,
+    callStackFraction: 0.08,
+    looseCallStackFraction: 0.13,
+    raiseBias: 0.28,
+    betBias: 0.34,
+    pressureLimit: 3,
+    wagerFraction: 0.12
+  },
+  clio: {
+    checkBias: 0.84,
+    callStackFraction: 0.07,
+    looseCallStackFraction: 0.11,
+    raiseBias: 0.1,
+    betBias: 0.16,
+    pressureLimit: 2,
+    wagerFraction: 0.06
+  },
+  atlas: {
+    checkBias: 0.55,
+    callStackFraction: 0.1,
+    looseCallStackFraction: 0.16,
+    raiseBias: 0.34,
+    betBias: 0.4,
+    pressureLimit: 3,
+    wagerFraction: 0.18
+  }
+}
+
 const rankingNames = [
   'High card',
   'Pair',
@@ -278,6 +346,7 @@ export class GameService {
     }
 
     const beforeBet = this.getSeatViews().find((seat) => seat.seatId === seatId)?.bet ?? 0
+    const actionStreet = this.getStreet()
     try {
       this.table.actionTaken(action, amount)
     } catch (error) {
@@ -288,12 +357,12 @@ export class GameService {
       seq: this.actionSeq,
       seatId,
       name: seatMeta[seatId].name,
-      street: this.getStreet(),
+      street: actionStreet,
       action,
       amount: amount ?? (action === 'call' ? this.getToCall(beforeBet) : undefined),
       at: new Date().toISOString()
     })
-    this.updateTendencies(seatId, action)
+    this.updateTendencies(seatId, action, actionStreet)
     this.issueTurnToken()
     this.progressStreetOrShowdown()
     clearLastError()
@@ -311,7 +380,7 @@ export class GameService {
     }
     const settledPot = Object.values(deltas).filter((delta) => delta > 0).reduce((sum, delta) => sum + delta, 0)
     const finalPot = capturedPot > 0 ? capturedPot : settledPot
-    const winningSeatIds = seatOrder.filter((seatId) => deltas[seatId] === Math.max(...Object.values(deltas)))
+    const winningSeatIds = this.getWinningSeatIds(deltas)
     const bankrollDelta = deltas.user
     const ratingDelta = this.getRatingDelta(bankrollDelta)
     const winningHandName = this.getWinningHandName(winningSeatIds)
@@ -327,7 +396,7 @@ export class GameService {
     }
     this.storage.saveProfile(this.profile)
 
-    this.review = {
+    const review: ReviewSnapshot = {
       handId: this.handId,
       completedAt: new Date().toISOString(),
       bankrollDelta,
@@ -342,13 +411,15 @@ export class GameService {
       publicActions: this.publicActions,
       showdownCards
     }
-    this.storage.recordHand(this.review)
+    this.review = review
+    this.storage.recordHand(review)
     this.writeLatestHand()
   }
 
   private chooseBotAction(seatId: SeatId): { action: ActionKind; amount?: number } {
     const legal = this.getLegalActions()
     const seat = this.getSeatViews().find((item) => item.seatId === seatId)
+    const profile = actionProfiles[seatId] ?? defaultActionProfile
     const toCall = legal.find((item) => item.kind === 'call')?.toCall ?? 0
     const canCheck = legal.some((item) => item.kind === 'check')
     const canCall = legal.some((item) => item.kind === 'call')
@@ -357,13 +428,29 @@ export class GameService {
     const pressure = this.publicActions.filter((action) => action.street === this.getStreet()).length
     const stack = seat?.stack ?? 0
 
-    if (canCheck && Math.random() < 0.78) return { action: 'check' }
-    if (canCall && toCall <= Math.max(100, stack * 0.08)) return { action: 'call' }
-    if (raise && pressure < 2 && Math.random() < 0.18) return { action: 'raise', amount: raise.min }
-    if (bet && Math.random() < 0.22) return { action: 'bet', amount: bet.min }
-    if (canCall && toCall <= Math.max(200, stack * 0.14)) return { action: 'call' }
+    if (canCheck) {
+      if (bet && pressure <= profile.pressureLimit && Math.random() < profile.betBias) {
+        return { action: 'bet', amount: this.chooseProfileWager(bet, profile) }
+      }
+      if (Math.random() < profile.checkBias) return { action: 'check' }
+    }
+
+    if (canCall && toCall <= Math.max(100, stack * profile.callStackFraction)) return { action: 'call' }
+    if (raise && pressure <= profile.pressureLimit && Math.random() < profile.raiseBias) {
+      return { action: 'raise', amount: this.chooseProfileWager(raise, profile) }
+    }
+    if (bet && Math.random() < profile.betBias) return { action: 'bet', amount: this.chooseProfileWager(bet, profile) }
+    if (canCall && toCall <= Math.max(200, stack * profile.looseCallStackFraction)) return { action: 'call' }
     if (legal.some((item) => item.kind === 'fold')) return { action: 'fold' }
     return { action: canCheck ? 'check' : 'call' }
+  }
+
+  private chooseProfileWager(action: LegalAction, profile: AgentActionProfile) {
+    const min = action.min ?? 0
+    const max = action.max ?? min
+    if (max <= min) return min
+    const target = min + (max - min) * profile.wagerFraction
+    return Math.max(min, Math.min(max, Math.round(target / 50) * 50))
   }
 
   private getActingSeat(): SeatId | null {
@@ -493,16 +580,40 @@ export class GameService {
     }
   }
 
+  private getWinningSeatIds(deltas: Record<SeatId, number>): SeatId[] {
+    try {
+      const engineWinners = this.table.winners().flat()
+      const winners = new Set<SeatId>()
+      for (const [seatIndex] of engineWinners) {
+        const seatId = seatOrder[seatIndex]
+        if (seatId) winners.add(seatId)
+      }
+      if (winners.size > 0) return [...winners]
+    } catch {
+      // Folded-out hands do not always expose showdown winners.
+    }
+
+    const handPlayers = this.getHandPlayersSafe()
+    if (handPlayers.length > 0) {
+      const activeSeatIds = seatOrder.filter((seatId) => handPlayers[seatMeta[seatId].seatIndex] !== null)
+      if (activeSeatIds.length === 1) return activeSeatIds
+    }
+
+    const maxDelta = Math.max(...Object.values(deltas))
+    const stackWinners = seatOrder.filter((seatId) => deltas[seatId] === maxDelta)
+    return stackWinners.length ? stackWinners : [seatOrder[0]]
+  }
+
   private getRatingDelta(bankrollDelta: number) {
     const expected = 1 / (1 + 10 ** ((1000 - this.profile.rating) / 400))
     const actual = Math.max(0, Math.min(1, 0.5 + bankrollDelta / 2000))
     return Math.max(-24, Math.min(24, Math.round(24 * (actual - expected))))
   }
 
-  private updateTendencies(seatId: SeatId, action: ActionKind) {
+  private updateTendencies(seatId: SeatId, action: ActionKind, street: Street) {
     if (seatId !== 'user') return
-    if (this.getStreet() === 'preflop' && ['call', 'bet', 'raise'].includes(action)) this.userVpipThisHand = true
-    if (this.getStreet() === 'preflop' && ['bet', 'raise'].includes(action)) this.userPfrThisHand = true
+    if (street === 'preflop' && ['call', 'bet', 'raise'].includes(action)) this.userVpipThisHand = true
+    if (street === 'preflop' && ['bet', 'raise'].includes(action)) this.userPfrThisHand = true
     if (action === 'fold') this.userFoldedThisHand = true
   }
 

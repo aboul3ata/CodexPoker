@@ -38,6 +38,10 @@ function userAction(state: GameSnapshot, preferred: 'call' | 'check' | 'fold' = 
   })
 }
 
+function tableChipTotal(state: GameSnapshot) {
+  return state.seats.reduce((sum, seat) => sum + seat.stack + seat.bet, 0)
+}
+
 describe('GameService', () => {
   it('starts a real hidden-information hand for the user', () => {
     const state = service.getSnapshot()
@@ -132,6 +136,10 @@ describe('GameService', () => {
     expect(state.history).toHaveLength(1)
     expect(state.history[0].bankroll).toBe(state.bankroll)
     expect(state.history[0].rating).toBe(state.rating)
+    expect(state.review?.winningSeatIds.length).toBeGreaterThan(0)
+    for (const winner of state.review?.winningSeatIds ?? []) {
+      expect(state.seats.find((seat) => seat.seatId === winner)?.status).toBe('winner')
+    }
     expect(state.review?.publicActions.some((action) => action.seatId === 'user' && action.action === 'fold')).toBe(true)
     expect(fs.existsSync(path.join(tempDir, 'bridge/latest-hand.json'))).toBe(true)
     const packet = JSON.parse(fs.readFileSync(path.join(tempDir, 'bridge/latest-hand.json'), 'utf8')) as LatestHandPacket
@@ -144,6 +152,7 @@ describe('GameService', () => {
   it('plays repeated hands without losing table-chip conservation or hanging', () => {
     for (let hand = 0; hand < 10; hand += 1) {
       let state = service.getSnapshot()
+      const startingTableTotal = tableChipTotal(state)
       let guard = 0
       while (state.phase !== 'hand-complete' && guard < 200) {
         guard += 1
@@ -159,8 +168,11 @@ describe('GameService', () => {
 
       expect(guard).toBeLessThan(200)
       expect(state.phase).toBe('hand-complete')
-      const totalStacks = state.seats.reduce((sum, seat) => sum + seat.stack, 0)
-      expect(totalStacks).toBe(60000)
+      expect(state.review?.winningSeatIds.length).toBeGreaterThan(0)
+      expect(tableChipTotal(state)).toBe(startingTableTotal)
+      for (const winner of state.review?.winningSeatIds ?? []) {
+        expect(state.seats.find((seat) => seat.seatId === winner)?.status).toBe('winner')
+      }
       expect(state.history.length).toBe(hand + 1)
       const vpip = Number(state.tendencySummary.match(/VPIP-ish (\\d+)%/)?.[1] ?? 0)
       expect(vpip).toBeLessThanOrEqual(100)
