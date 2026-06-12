@@ -33,7 +33,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RISKY_PATH_REGEX: '(^|/)(\.github/workflows/|\.github/actions/|CODEOWNERS$|package\.json$|package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$|bun\.lockb$|requirements.*\.txt$|pyproject\.toml$|poetry\.lock$|uv\.lock$|Dockerfile$|docker-compose.*\.ya?ml$|supabase/migrations/|migrations/|terraform/|infra/|deploy/|auth/|billing/|payments?/|stripe/|security/|secrets?/|\.env)'
+  RISKY_PATH_REGEX: '(^|/)(\.github/workflows/|\.github/actions/|CODEOWNERS$|package\.json$|package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$|bun\.lock$|bun\.lockb$|requirements.*\.txt$|pyproject\.toml$|poetry\.lock$|uv\.lock$|Dockerfile$|docker-compose.*\.ya?ml$|render\.ya?ml$|supabase/migrations/|migrations/|terraform/|infra/|deploy/|auth/|billing/|payments?/|stripe/|security/|secrets?/|\.env)'
 
 jobs:
   pr-review-cloud-request:
@@ -46,16 +46,21 @@ jobs:
       - name: Decide whether to request a cloud fix
         id: preflight
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
+
+          is_trusted_codex_author() {
+            [ "$1" = "chatgpt-codex-connector[bot]" ] ||
+              [ "$1" = "codex[bot]" ] ||
+              [ "$1" = "openai-codex[bot]" ]
+          }
 
           run=false
           reason="not a Codex review event"
           pr_number=""
           author=""
-          body=""
           marker=""
 
           if [ -n "${OPENAI_API_KEY}" ]; then
@@ -63,16 +68,13 @@ jobs:
           elif [ "${GITHUB_EVENT_NAME}" = "pull_request_review" ]; then
             pr_number="$(jq -r '.pull_request.number' "${GITHUB_EVENT_PATH}")"
             author="$(jq -r '.review.user.login // ""' "${GITHUB_EVENT_PATH}")"
-            body="$(jq -r '.review.body // ""' "${GITHUB_EVENT_PATH}")"
           elif [ "${GITHUB_EVENT_NAME}" = "pull_request_review_comment" ]; then
             pr_number="$(jq -r '.pull_request.number' "${GITHUB_EVENT_PATH}")"
             author="$(jq -r '.comment.user.login // ""' "${GITHUB_EVENT_PATH}")"
-            body="$(jq -r '.comment.body // ""' "${GITHUB_EVENT_PATH}")"
           fi
 
           if [ -n "${pr_number}" ]; then
-            signal="$(printf '%s\n%s\n' "${author}" "${body}" | tr '[:upper:]' '[:lower:]')"
-            if printf '%s' "${signal}" | grep -Eq 'codex|openai'; then
+            if is_trusted_codex_author "${author}"; then
               pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}")"
               head_repo="$(printf '%s' "${pr_json}" | jq -r '.head.repo.full_name')"
               head_sha="$(printf '%s' "${pr_json}" | jq -r '.head.sha')"
@@ -88,6 +90,8 @@ jobs:
               else
                 reason="PR head branch is in a fork; refusing automatic cloud-fix request"
               fi
+            else
+              reason="review/comment author is not a trusted Codex bot"
             fi
           fi
 
@@ -106,7 +110,7 @@ jobs:
       - name: Ask Codex cloud to fix the review
         if: steps.preflight.outputs.run == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
           MARKER: ${{ steps.preflight.outputs.marker }}
         run: |
@@ -127,17 +131,22 @@ jobs:
       - name: Decide whether to run
         id: preflight
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           INPUT_PR: ${{ inputs.pr }}
         run: |
           set -euo pipefail
 
+          is_trusted_codex_author() {
+            [ "$1" = "chatgpt-codex-connector[bot]" ] ||
+              [ "$1" = "codex[bot]" ] ||
+              [ "$1" = "openai-codex[bot]" ]
+          }
+
           run=false
           reason="not a Codex review event"
           pr_number=""
           author=""
-          body=""
 
           if [ -z "${OPENAI_API_KEY}" ]; then
             reason="missing OPENAI_API_KEY Actions secret"
@@ -152,18 +161,17 @@ jobs:
           elif [ "${GITHUB_EVENT_NAME}" = "pull_request_review" ]; then
             pr_number="$(jq -r '.pull_request.number' "${GITHUB_EVENT_PATH}")"
             author="$(jq -r '.review.user.login // ""' "${GITHUB_EVENT_PATH}")"
-            body="$(jq -r '.review.body // ""' "${GITHUB_EVENT_PATH}")"
           elif [ "${GITHUB_EVENT_NAME}" = "pull_request_review_comment" ]; then
             pr_number="$(jq -r '.pull_request.number' "${GITHUB_EVENT_PATH}")"
             author="$(jq -r '.comment.user.login // ""' "${GITHUB_EVENT_PATH}")"
-            body="$(jq -r '.comment.body // ""' "${GITHUB_EVENT_PATH}")"
           fi
 
           if [ "${run}" != "true" ] && [ -n "${pr_number}" ]; then
-            signal="$(printf '%s\n%s\n' "${author}" "${body}" | tr '[:upper:]' '[:lower:]')"
-            if printf '%s' "${signal}" | grep -Eq 'codex|openai'; then
+            if is_trusted_codex_author "${author}"; then
               run=true
               reason="Codex-authored review event"
+            else
+              reason="review/comment author is not a trusted Codex bot"
             fi
           fi
 
@@ -200,12 +208,12 @@ jobs:
         with:
           ref: ${{ steps.preflight.outputs.head_ref }}
           fetch-depth: 0
-          token: ${{ github.token }}
+          token: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
 
       - name: Capture PR review context
         if: steps.preflight.outputs.run == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
           BASE_REF: ${{ steps.preflight.outputs.base_ref }}
         run: |
@@ -217,6 +225,9 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" --paginate | jq -s 'add' > .codex-autofix-context/reviews.json
           gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/comments" --paginate | jq -s 'add' > .codex-autofix-context/review-comments.json
           gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate | jq -s 'add' > .codex-autofix-context/issue-comments.json
+          gh api "repos/${GITHUB_REPOSITORY}/contents/.github/codex/prompts/autofix-pr.md?ref=${BASE_REF}" --jq .content |
+            tr -d '\n' |
+            base64 -d > .codex-autofix-context/autofix-pr.md
 
           git fetch --no-tags origin "${BASE_REF}" || true
           git diff --stat "origin/${BASE_REF}...HEAD" > .codex-autofix-context/pr-diff-stat.txt || true
@@ -225,12 +236,12 @@ jobs:
         if: steps.preflight.outputs.run == 'true'
         uses: openai/codex-action@v1
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
           BASE_REF: ${{ steps.preflight.outputs.base_ref }}
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: .github/codex/prompts/autofix-pr.md
+          prompt-file: .codex-autofix-context/autofix-pr.md
           output-file: .codex-autofix-context/codex-output.md
           sandbox: workspace-write
           codex-args: '["--ephemeral"]'
@@ -268,14 +279,14 @@ jobs:
       - name: Comment when no patch was needed
         if: steps.preflight.outputs.run == 'true' && steps.changes.outputs.has_changes == 'false'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
         run: gh pr comment "${PR_NUMBER}" --body "Codex autofix ran, but found no safe patch to apply."
 
       - name: Comment when patch is risky
         if: steps.preflight.outputs.run == 'true' && steps.changes.outputs.has_changes == 'true' && steps.changes.outputs.safe != 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
         run: |
           {
@@ -302,18 +313,35 @@ jobs:
       - name: Comment on PR autofix
         if: steps.preflight.outputs.run == 'true' && steps.changes.outputs.safe == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
         run: gh pr comment "${PR_NUMBER}" --body "Pushed a Codex autofix commit for the actionable Codex review comments. CI is the merge gate."
 
       - name: Request auto-merge when protected
         if: steps.preflight.outputs.run == 'true' && steps.changes.outputs.safe == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
           BASE_REF: ${{ steps.preflight.outputs.base_ref }}
         run: |
-          if gh api "repos/${GITHUB_REPOSITORY}/branches/${BASE_REF}/protection" >/dev/null 2>&1; then
+          has_required_checks() {
+            branch="$1"
+            if protection="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${branch}/protection" 2>/dev/null)"; then
+              count="$(printf '%s' "${protection}" | jq '((.required_status_checks.contexts // []) | length) + ((.required_status_checks.checks // []) | length)')"
+              if [ "${count}" -gt 0 ]; then
+                return 0
+              fi
+            fi
+            if rules="$(gh api "repos/${GITHUB_REPOSITORY}/rules/branches/${branch}" 2>/dev/null)"; then
+              count="$(printf '%s' "${rules}" | jq '[.. | objects | select(.type? == "required_status_checks") | .parameters.required_status_checks[]?] | length')"
+              if [ "${count}" -gt 0 ]; then
+                return 0
+              fi
+            fi
+            return 1
+          }
+
+          if has_required_checks "${BASE_REF}"; then
             gh pr merge "${PR_NUMBER}" --auto --squash --delete-branch || \
               gh pr comment "${PR_NUMBER}" --body "Codex pushed an autofix, but GitHub auto-merge is not available for this PR. Merge after CI passes."
           else
@@ -359,7 +387,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          token: ${{ github.token }}
+          token: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
 
       - name: Prepare main-push context
         if: steps.preflight.outputs.run == 'true'
@@ -401,7 +429,7 @@ jobs:
         if: steps.preflight.outputs.run == 'true'
         uses: openai/codex-action@v1
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: .github/codex/prompts/autofix-main.md
@@ -449,7 +477,7 @@ jobs:
       - name: Open auto-merge repair PR
         if: steps.preflight.outputs.run == 'true' && steps.changes.outputs.safe == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
         run: |
           set -euo pipefail
           git config user.name "codex-autofix[bot]"
@@ -470,7 +498,24 @@ jobs:
             --title "fix: Codex autofix after main push" \
             --body-file .codex-autofix-context/pr-body.md)"
 
-          if gh api "repos/${GITHUB_REPOSITORY}/branches/${GITHUB_REF_NAME}/protection" >/dev/null 2>&1; then
+          has_required_checks() {
+            branch="$1"
+            if protection="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${branch}/protection" 2>/dev/null)"; then
+              count="$(printf '%s' "${protection}" | jq '((.required_status_checks.contexts // []) | length) + ((.required_status_checks.checks // []) | length)')"
+              if [ "${count}" -gt 0 ]; then
+                return 0
+              fi
+            fi
+            if rules="$(gh api "repos/${GITHUB_REPOSITORY}/rules/branches/${branch}" 2>/dev/null)"; then
+              count="$(printf '%s' "${rules}" | jq '[.. | objects | select(.type? == "required_status_checks") | .parameters.required_status_checks[]?] | length')"
+              if [ "${count}" -gt 0 ]; then
+                return 0
+              fi
+            fi
+            return 1
+          }
+
+          if has_required_checks "${GITHUB_REF_NAME}"; then
             gh pr merge "${pr_url}" --auto --squash --delete-branch || \
               gh pr comment "${pr_url}" --body "Codex opened this repair PR, but GitHub auto-merge is not available for this PR. Merge after CI passes."
           else
