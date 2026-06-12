@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RISKY_PATH_REGEX: '(^|/)(\.github/workflows/|\.github/actions/|CODEOWNERS$|package\.json$|package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$|bun\.lock$|bun\.lockb$|requirements.*\.txt$|pyproject\.toml$|poetry\.lock$|uv\.lock$|Dockerfile$|docker-compose.*\.ya?ml$|render\.ya?ml$|supabase/migrations/|migrations/|terraform/|infra/|deploy/|auth/|billing/|payments?/|stripe/|security/|secrets?/|\.env)'
+  RISKY_PATH_REGEX: '(^|/)(\.github/workflows/|\.github/actions/|CODEOWNERS$|package\.json$|package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$|bun\.lock$|bun\.lockb$|requirements.*\.txt$|pyproject\.toml$|poetry\.lock$|uv\.lock$|[^/]+\.tsbuildinfo$|Dockerfile$|docker-compose.*\.ya?ml$|render\.ya?ml$|supabase/migrations/|migrations/|terraform/|infra/|deploy/|auth/|billing/|payments?/|stripe/|security/|secrets?/|\.env)'
 
 jobs:
   dispatch-pr-autofix:
