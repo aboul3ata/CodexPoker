@@ -414,38 +414,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
           PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
-        run: gh pr comment "${PR_NUMBER}" --body "Pushed a Codex autofix commit for the actionable Codex review comments. CI is the merge gate."
-
-      - name: Request auto-merge when protected
-        if: steps.preflight.outputs.run == 'true' && steps.changes.outputs.safe == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
-          PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
-          BASE_REF: ${{ steps.preflight.outputs.base_ref }}
-        run: |
-          has_required_checks() {
-            branch="$1"
-            if protection="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${branch}/protection" 2>/dev/null)"; then
-              count="$(printf '%s' "${protection}" | jq '((.required_status_checks.contexts // []) | length) + ((.required_status_checks.checks // []) | length)')"
-              if [ "${count}" -gt 0 ]; then
-                return 0
-              fi
-            fi
-            if rules="$(gh api "repos/${GITHUB_REPOSITORY}/rules/branches/${branch}" 2>/dev/null)"; then
-              count="$(printf '%s' "${rules}" | jq '[.. | objects | select(.type? == "required_status_checks") | .parameters.required_status_checks[]?] | length')"
-              if [ "${count}" -gt 0 ]; then
-                return 0
-              fi
-            fi
-            return 1
-          }
-
-          if has_required_checks "${BASE_REF}"; then
-            gh pr merge "${PR_NUMBER}" --auto --squash --delete-branch || \
-              gh pr comment "${PR_NUMBER}" --body "Codex pushed an autofix, but GitHub auto-merge is not available for this PR. Merge after CI passes."
-          else
-            gh pr comment "${PR_NUMBER}" --body "Codex pushed an autofix. I did not request auto-merge because `${BASE_REF}` does not have branch protection/required checks configured."
-          fi
+        run: gh pr comment "${PR_NUMBER}" --body "Pushed a Codex autofix commit for the actionable Codex review comments. Please review CI and merge manually when ready."
 
   main-push-autofix:
     name: Open repair PR after direct default-branch push
@@ -569,11 +538,11 @@ jobs:
       - name: Stop on risky main patch
         if: steps.preflight.outputs.run == 'true' && steps.changes.outputs.has_changes == 'true' && steps.changes.outputs.safe != 'true'
         run: |
-          echo "Codex produced a guarded patch. Refusing to open an auto-merge PR."
+          echo "Codex produced a guarded patch. Refusing to open an automatic repair PR."
           cat .codex-autofix-context/risky-files.txt
           exit 1
 
-      - name: Open auto-merge repair PR
+      - name: Open repair PR
         if: steps.preflight.outputs.run == 'true' && steps.changes.outputs.safe == 'true'
         env:
           GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
@@ -588,7 +557,7 @@ jobs:
           {
             echo "Codex found and fixed a serious issue introduced by a direct push to ${GITHUB_REF_NAME}."
             echo
-            echo "This PR was created automatically. It should merge only after required checks pass."
+            echo "This PR was created automatically. Please review CI and merge manually when ready."
           } > .codex-autofix-context/pr-body.md
 
           pr_url="$(gh pr create \
@@ -596,27 +565,4 @@ jobs:
             --head "${branch}" \
             --title "fix: Codex autofix after main push" \
             --body-file .codex-autofix-context/pr-body.md)"
-
-          has_required_checks() {
-            branch="$1"
-            if protection="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${branch}/protection" 2>/dev/null)"; then
-              count="$(printf '%s' "${protection}" | jq '((.required_status_checks.contexts // []) | length) + ((.required_status_checks.checks // []) | length)')"
-              if [ "${count}" -gt 0 ]; then
-                return 0
-              fi
-            fi
-            if rules="$(gh api "repos/${GITHUB_REPOSITORY}/rules/branches/${branch}" 2>/dev/null)"; then
-              count="$(printf '%s' "${rules}" | jq '[.. | objects | select(.type? == "required_status_checks") | .parameters.required_status_checks[]?] | length')"
-              if [ "${count}" -gt 0 ]; then
-                return 0
-              fi
-            fi
-            return 1
-          }
-
-          if has_required_checks "${GITHUB_REF_NAME}"; then
-            gh pr merge "${pr_url}" --auto --squash --delete-branch || \
-              gh pr comment "${pr_url}" --body "Codex opened this repair PR, but GitHub auto-merge is not available for this PR. Merge after CI passes."
-          else
-            gh pr comment "${pr_url}" --body "Codex opened this repair PR. I did not request auto-merge because `${GITHUB_REF_NAME}` does not have branch protection/required checks configured."
-          fi
+          gh pr comment "${pr_url}" --body "Codex opened this repair PR. Auto-merge is disabled; please review CI and merge manually when ready."
