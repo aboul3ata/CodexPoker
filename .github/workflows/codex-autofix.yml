@@ -5,6 +5,8 @@ on:
     types: [submitted]
   pull_request_review_comment:
     types: [created]
+  repository_dispatch:
+    types: [codex-autofix-pr]
   push:
     branches: [main, master]
   workflow_dispatch:
@@ -29,13 +31,103 @@ permissions:
   checks: read
 
 concurrency:
-  group: codex-autofix-${{ github.workflow }}-${{ github.event.pull_request.number || github.event.comment.pull_request_url || github.ref || github.run_id }}
+  group: codex-autofix-${{ github.workflow }}-${{ github.event.client_payload.pr_number || github.event.pull_request.number || github.event.comment.pull_request_url || github.ref || github.run_id }}
   cancel-in-progress: false
 
 env:
   RISKY_PATH_REGEX: '(^|/)(\.github/workflows/|\.github/actions/|CODEOWNERS$|package\.json$|package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$|bun\.lock$|bun\.lockb$|requirements.*\.txt$|pyproject\.toml$|poetry\.lock$|uv\.lock$|Dockerfile$|docker-compose.*\.ya?ml$|render\.ya?ml$|supabase/migrations/|migrations/|terraform/|infra/|deploy/|auth/|billing/|payments?/|stripe/|security/|secrets?/|\.env)'
 
 jobs:
+  dispatch-pr-autofix:
+    name: Dispatch trusted PR autofix run
+    if: >-
+      github.event_name == 'pull_request_review' ||
+      github.event_name == 'pull_request_review_comment'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether to dispatch
+        id: preflight
+        env:
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN || github.token }}
+          AUTOFIX_GITHUB_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          is_trusted_codex_author() {
+            [ "$1" = "chatgpt-codex-connector[bot]" ] ||
+              [ "$1" = "codex[bot]" ] ||
+              [ "$1" = "openai-codex[bot]" ]
+          }
+
+          run=false
+          reason="not a trusted Codex review event"
+          pr_number=""
+          marker=""
+
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            reason="missing OPENAI_API_KEY Actions secret"
+          elif [ -z "${AUTOFIX_GITHUB_TOKEN}" ]; then
+            reason="missing AUTOFIX_GITHUB_TOKEN Actions secret"
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request_review" ]; then
+            pr_number="$(jq -r '.pull_request.number' "${GITHUB_EVENT_PATH}")"
+            author="$(jq -r '.review.user.login // ""' "${GITHUB_EVENT_PATH}")"
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request_review_comment" ]; then
+            pr_number="$(jq -r '.pull_request.number' "${GITHUB_EVENT_PATH}")"
+            author="$(jq -r '.comment.user.login // ""' "${GITHUB_EVENT_PATH}")"
+          fi
+
+          if [ -n "${pr_number}" ] && is_trusted_codex_author "${author:-}"; then
+            pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}")"
+            head_repo="$(printf '%s' "${pr_json}" | jq -r '.head.repo.full_name')"
+            head_sha="$(printf '%s' "${pr_json}" | jq -r '.head.sha')"
+            if [ "${head_repo}" = "${GITHUB_REPOSITORY}" ]; then
+              marker="<!-- codex-autofix-dispatch:${head_sha} -->"
+              comments="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" --paginate | jq -s 'add')"
+              if printf '%s' "${comments}" | grep -Fq "${marker}"; then
+                reason="trusted autofix already dispatched for this PR head"
+              else
+                run=true
+                reason="dispatching trusted autofix run"
+              fi
+            else
+              reason="PR head branch is in a fork; refusing automatic autofix dispatch"
+            fi
+          fi
+
+          {
+            echo "run=${run}"
+            echo "reason=${reason}"
+            echo "pr_number=${pr_number}"
+            echo "head_sha=${head_sha:-}"
+            echo "marker=${marker}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Explain skip
+        if: steps.preflight.outputs.run != 'true'
+        run: |
+          echo "Skipping trusted PR autofix dispatch: ${{ steps.preflight.outputs.reason }}"
+
+      - name: Dispatch PR autofix
+        if: steps.preflight.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AUTOFIX_GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.preflight.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.preflight.outputs.head_sha }}
+          MARKER: ${{ steps.preflight.outputs.marker }}
+        run: |
+          {
+            echo "${MARKER}"
+            echo "Queued Codex autofix via trusted automation token."
+          } > /tmp/codex-autofix-dispatch.md
+          gh pr comment "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body-file /tmp/codex-autofix-dispatch.md
+
+          jq -nc \
+            --arg pr_number "${PR_NUMBER}" \
+            --arg head_sha "${HEAD_SHA}" \
+            '{event_type:"codex-autofix-pr", client_payload:{pr_number:$pr_number, head_sha:$head_sha}}' |
+            gh api "repos/${GITHUB_REPOSITORY}/dispatches" --method POST --input -
+
   pr-review-cloud-request:
     name: Request Codex cloud fix when API key is missing
     if: >-
@@ -123,8 +215,7 @@ jobs:
   pr-review-autofix:
     name: Fix Codex PR review comments
     if: >-
-      github.event_name == 'pull_request_review' ||
-      github.event_name == 'pull_request_review_comment' ||
+      (github.event_name == 'repository_dispatch' && github.event.action == 'codex-autofix-pr') ||
       (github.event_name == 'workflow_dispatch' && inputs.mode == 'pr')
     runs-on: ubuntu-latest
     steps:
@@ -150,6 +241,14 @@ jobs:
 
           if [ -z "${OPENAI_API_KEY}" ]; then
             reason="missing OPENAI_API_KEY Actions secret"
+          elif [ "${GITHUB_EVENT_NAME}" = "repository_dispatch" ]; then
+            pr_number="$(jq -r '.client_payload.pr_number // ""' "${GITHUB_EVENT_PATH}")"
+            if [ -z "${pr_number}" ]; then
+              reason="repository_dispatch missing client_payload.pr_number"
+            else
+              run=true
+              reason="trusted repository_dispatch PR autofix"
+            fi
           elif [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             if [ -z "${INPUT_PR}" ]; then
               reason="workflow_dispatch pr mode requires the pr input"
