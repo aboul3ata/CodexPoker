@@ -14,6 +14,7 @@ import type {
   SeatView,
   Street
 } from '../shared/contracts'
+import { buildCodexPublicEvent, type CodexPublicEvent } from '../shared/codex-events'
 import { clearCurrentTurn, clearLastError, writeCurrentTurn, writeLatestHand } from './bridge'
 import { scoreHolding } from './bot-strength'
 import { InvalidActionError, NotToActError, StaleTurnError } from './errors'
@@ -196,6 +197,10 @@ export class GameService {
   private userPfrThisHand = false
   private userFoldedThisHand = false
   private listeners = new Set<(snapshot: GameSnapshot) => void>()
+  private codexListeners = new Set<(event: CodexPublicEvent) => void>()
+  private codexLeaseTimers = new Map<(event: CodexPublicEvent) => void, NodeJS.Timeout>()
+  private codexGraceTimers = new Set<NodeJS.Timeout>()
+  private closed = false
 
   constructor(private storage = new Storage()) {
     this.profile = this.storage.getProfile()
@@ -213,6 +218,12 @@ export class GameService {
   }
 
   close() {
+    this.closed = true
+    this.listeners.clear()
+    this.codexListeners.clear()
+    for (const timer of this.codexLeaseTimers.values()) clearTimeout(timer)
+    this.codexLeaseTimers.clear()
+    this.clearCodexGraceLeases()
     this.storage.close()
   }
 
@@ -220,6 +231,38 @@ export class GameService {
     this.listeners.add(listener)
     listener(this.getSnapshot())
     return () => this.listeners.delete(listener)
+  }
+
+  subscribeCodex(listener: (event: CodexPublicEvent) => void, leaseMs = 65000) {
+    this.codexListeners.add(listener)
+    const snapshot = this.getSnapshot()
+    for (const stateListener of this.listeners) stateListener(snapshot)
+    listener(buildCodexPublicEvent(snapshot))
+    let disconnected = false
+    const disconnect = (graceMs = 0) => {
+      if (disconnected) return
+      disconnected = true
+      const timer = this.codexLeaseTimers.get(listener)
+      if (timer) clearTimeout(timer)
+      this.codexLeaseTimers.delete(listener)
+      this.codexListeners.delete(listener)
+      if (graceMs > 0 && !this.closed) {
+        const graceTimer = setTimeout(() => {
+          this.codexGraceTimers.delete(graceTimer)
+          const expiredSnapshot = this.getSnapshot()
+          for (const stateListener of this.listeners) stateListener(expiredSnapshot)
+        }, graceMs)
+        graceTimer.unref()
+        this.codexGraceTimers.add(graceTimer)
+      }
+      if (this.closed) return
+      const disconnectedSnapshot = this.getSnapshot()
+      for (const stateListener of this.listeners) stateListener(disconnectedSnapshot)
+    }
+    const timer = setTimeout(disconnect, leaseMs)
+    timer.unref()
+    this.codexLeaseTimers.set(listener, timer)
+    return disconnect
   }
 
   getSnapshot(): GameSnapshot {
@@ -245,6 +288,7 @@ export class GameService {
       tendencySummary: this.getTendencySummary(),
       sessionGoal: 'Win two pots or catch one good fold',
       tableNotice: this.tableNotice,
+      codexConnection: this.codexListeners.size > 0 || this.codexGraceTimers.size > 0 ? 'connected' : 'disconnected',
       bridgeStatus: this.getBridgeStatus(actingSeatId, isComplete),
       review: this.review
     }
@@ -257,6 +301,7 @@ export class GameService {
     if (request.seat !== actingSeatId) throw new NotToActError(`${seatMeta[request.seat].name} is not to act.`)
     if (request.turnToken !== this.turnToken) throw new StaleTurnError()
     this.applyAction(request.seat, request.action, request.amount)
+    if (request.seat === 'uplift') this.clearCodexGraceLeases()
     this.advanceUntilHumanOrCodex()
     this.emit()
     return this.getSnapshot()
@@ -268,6 +313,7 @@ export class GameService {
     if (actingSeatId !== 'uplift') throw new NotToActError('Codexxyyy is not to act.')
     const botAction = this.chooseBotAction('uplift')
     this.applyAction('uplift', botAction.action, botAction.amount)
+    this.clearCodexGraceLeases()
     this.advanceUntilHumanOrCodex()
     this.emit()
     return this.getSnapshot()
@@ -291,6 +337,7 @@ export class GameService {
   }
 
   startNewHand() {
+    this.clearCodexGraceLeases()
     this.review = undefined
     this.publicActions = []
     this.handId = `hand_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -835,6 +882,13 @@ export class GameService {
   private emit() {
     const snapshot = this.getSnapshot()
     for (const listener of this.listeners) listener(snapshot)
+    const event = buildCodexPublicEvent(snapshot)
+    for (const listener of this.codexListeners) listener(event)
+  }
+
+  private clearCodexGraceLeases() {
+    for (const timer of this.codexGraceTimers) clearTimeout(timer)
+    this.codexGraceTimers.clear()
   }
 
   private ensurePlayableStacks() {

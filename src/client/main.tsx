@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { Bot, ChevronRight, MessageCircle, RotateCcw, Sparkles, UserRound, UsersRound, X, Zap } from 'lucide-react'
+import { Bot, MessageCircle, RotateCcw, Sparkles, UserRound, UsersRound, X, Zap } from 'lucide-react'
 import type { Card, GameSnapshot, LegalAction, PublicAction, SeatId, SeatView } from '../shared/contracts'
+import { fetchStateWithRetry } from './state-loader'
 import './styles.css'
 
 const avatarBySeat: Record<SeatId, string> = {
@@ -21,6 +22,7 @@ type PreviewPreferences = {
 function App() {
   const [state, setState] = useState<GameSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [lineupOpen, setLineupOpen] = useState(false)
   const [preferences, setPreferences] = useState<PreviewPreferences>({
     reducedMotion: false,
@@ -28,15 +30,16 @@ function App() {
   })
 
   useEffect(() => {
-    fetchState().then(setState).catch((err) => setError(err.message))
+    setError(null)
+    fetchStateWithRetry().then(setState).catch((err) => setError(err.message))
     const events = new EventSource('/events')
     events.addEventListener('state', (event) => {
       setState(JSON.parse((event as MessageEvent).data))
       setError(null)
     })
-    events.onerror = () => setError('Live table connection dropped. The HTTP controls still work.')
+    events.onerror = () => setError('Local poker server is unavailable. Return to Codex chat to restart it, then retry.')
     return () => events.close()
-  }, [])
+  }, [reloadKey])
 
   const userSeat = state?.seats.find((seat) => seat.seatId === 'user')
   const isUserTurn = state?.actingSeatId === 'user'
@@ -46,18 +49,22 @@ function App() {
 
   async function post(path: string, body?: unknown) {
     setError(null)
-    const requestInit: RequestInit = { method: 'POST' }
-    if (body !== undefined) {
-      requestInit.headers = { 'content-type': 'application/json' }
-      requestInit.body = JSON.stringify(body)
+    try {
+      const requestInit: RequestInit = { method: 'POST' }
+      if (body !== undefined) {
+        requestInit.headers = { 'content-type': 'application/json' }
+        requestInit.body = JSON.stringify(body)
+      }
+      const response = await fetch(path, requestInit)
+      const payload = await response.json().catch(() => ({})) as { message?: string; state?: GameSnapshot }
+      if (!response.ok || !payload.state) {
+        setError(payload.message ?? 'Local poker server is unavailable. Return to Codex chat to restart it, then retry.')
+        return
+      }
+      setState(payload.state)
+    } catch {
+      setError('Local poker server is unavailable. Return to Codex chat to restart it, then retry.')
     }
-    const response = await fetch(path, requestInit)
-    const payload = await response.json()
-    if (!response.ok) {
-      setError(payload.message ?? 'Something went wrong.')
-      return
-    }
-    setState(payload.state)
   }
 
   async function submitAction(action: LegalAction, amount?: number) {
@@ -77,9 +84,21 @@ function App() {
   if (!state) {
     return (
       <main className="boot">
-        <div className="loader-chip" />
-        <h1>Shuffling the classroom table</h1>
-        <p>Loading local poker state.</p>
+        {error ? (
+          <>
+            <h1>Could not connect to the poker table</h1>
+            <p role="alert">{error}</p>
+            <button className="primary-action" onClick={() => setReloadKey((value) => value + 1)} type="button">
+              Retry connection
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="loader-chip" />
+            <h1>Shuffling the classroom table</h1>
+            <p>Loading local poker state.</p>
+          </>
+        )}
       </main>
     )
   }
@@ -104,7 +123,7 @@ function App() {
         </div>
         <div className={`bridge-pill ${state.bridgeStatus}`}>
           <Zap size={16} />
-          {bridgeLabel(state.bridgeStatus)}
+          {bridgeLabel(state.bridgeStatus, state.codexConnection)}
         </div>
         <button
           aria-controls="table-lineup"
@@ -140,7 +159,6 @@ function App() {
             isCatchingUp={playback.isCatchingUp}
             onAction={submitAction}
             onFastForward={() => post('/api/fast-forward')}
-            onNextHand={() => post('/api/new-hand')}
           />
         </section>
       </section>
@@ -206,12 +224,6 @@ function playbackDelay(action: PublicAction | undefined) {
   const kind = seatKindFor(action.seatId)
   if (kind === 'human') return 1400
   return 2200 + (action.seq % 4) * 650
-}
-
-async function fetchState(): Promise<GameSnapshot> {
-  const response = await fetch('/api/state')
-  const payload = await response.json()
-  return payload.state
 }
 
 function LineupDrawer({
@@ -468,8 +480,7 @@ function ActionFooter({
   canFastForward,
   isCatchingUp,
   onAction,
-  onFastForward,
-  onNextHand
+  onFastForward
 }: {
   state: GameSnapshot
   isUserTurn: boolean
@@ -478,14 +489,11 @@ function ActionFooter({
   isCatchingUp: boolean
   onAction: (action: LegalAction, amount?: number) => void
   onFastForward: () => void
-  onNextHand: () => void
 }) {
   if (state.phase === 'hand-complete') {
     return (
       <footer className="action-footer complete">
-        <button className="primary-action" onClick={() => onNextHand()} type="button">
-          Next hand <ChevronRight size={18} />
-        </button>
+        <div className="waiting-copy">Hand complete. Choose review or next hand in Codex chat.</div>
       </footer>
     )
   }
@@ -504,7 +512,11 @@ function ActionFooter({
           Following table action...
         </div>
       ) : isUpliftTurn ? (
-        <div className="waiting-copy">Codexxyyy is thinking.</div>
+        <div className="waiting-copy">
+          {state.codexConnection === 'connected'
+            ? 'Codexxyyy is thinking.'
+            : 'Codex task disconnected—return to Codex chat to resume.'}
+        </div>
       ) : (
         <div className="waiting-copy">Local bots are moving.</div>
       )}
@@ -665,7 +677,8 @@ function suitSymbol(suit: Card['suit']) {
   return { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[suit]
 }
 
-function bridgeLabel(status: GameSnapshot['bridgeStatus']) {
+function bridgeLabel(status: GameSnapshot['bridgeStatus'], connection: GameSnapshot['codexConnection']) {
+  if (status === 'waiting-for-codex' && connection === 'disconnected') return 'Codex task disconnected'
   return {
     'waiting-for-codex': 'Codexxyyy to act',
     'local-bots-moving': 'Bots moving',

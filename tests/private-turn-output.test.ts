@@ -33,6 +33,7 @@ const baseState: GameSnapshot = {
   history: [],
   tendencySummary: 'VPIP-ish 22%, preflop raise 8%, folds logged 3.',
   sessionGoal: 'Win two pots or catch one good fold',
+  codexConnection: 'disconnected',
   bridgeStatus: 'waiting-for-codex'
 }
 

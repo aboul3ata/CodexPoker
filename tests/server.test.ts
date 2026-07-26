@@ -14,7 +14,11 @@ beforeEach(() => {
   previousDataDir = process.env.CODEX_POKER_DATA_DIR
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-poker-server-test-'))
   process.env.CODEX_POKER_DATA_DIR = tempDir
-  app = createServer(new GameService(new Storage(path.join(tempDir, 'server.sqlite'))))
+  app = createServer(
+    new GameService(new Storage(path.join(tempDir, 'server.sqlite'))),
+    'server-test-runtime',
+    'server-test-watcher-token-1234567890'
+  )
 })
 
 afterEach(async () => {
@@ -28,6 +32,30 @@ afterEach(async () => {
 })
 
 describe('Fastify API', () => {
+  it('reports a verified runtime identity and readiness', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/health' })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      ok: true,
+      app: 'codex-poker',
+      schemaVersion: 1,
+      repoRoot: expect.any(String),
+      ready: true
+    })
+    expect(response.json().runtimeId).toEqual(expect.any(String))
+    expect(response.json().pid).toBe(process.pid)
+  })
+
+  it('does not let an unauthenticated request forge Codex watcher presence', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/codex/events' })
+
+    expect(response.statusCode).toBe(403)
+    expect(response.json().code).toBe('watcher_unauthorized')
+    const state = await app.inject({ method: 'GET', url: '/api/state' })
+    expect(state.json().state.codexConnection).toBe('disconnected')
+  })
+
   it('returns state and accepts a legal user action', async () => {
     const stateResponse = await app.inject({ method: 'GET', url: '/api/state' })
     expect(stateResponse.statusCode).toBe(200)
