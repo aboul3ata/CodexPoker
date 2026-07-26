@@ -95,6 +95,7 @@ export type GameSnapshot = {
   tendencySummary: string
   sessionGoal: string
   tableNotice?: string
+  codexConnection: 'connected' | 'disconnected'
   bridgeStatus: 'waiting-for-codex' | 'local-bots-moving' | 'user-to-act' | 'hand-complete'
   review?: ReviewSnapshot
 }

@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test'
+import fs from 'node:fs'
+import path from 'node:path'
 
 test('renders the playable CodexPoker table', async ({ page }) => {
   await page.goto('/')
@@ -61,7 +63,7 @@ test('supports a legal user action from the preview', async ({ page, request }) 
   await expect(actionButton).toBeVisible()
   await actionButton.click()
 
-  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy is thinking|Fold|Call|Check|Bet|Raise|Hand complete|Local bots|Simulate to result|Fast-fold result|Next hand/)
+  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy is thinking|Codex task disconnected|Fold|Call|Check|Bet|Raise|Hand complete|Local bots|Simulate to result|Fast-fold result/)
   await expect(page.locator('.action-rail .action-beat')).not.toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
 })
@@ -91,8 +93,39 @@ test('keeps Codexxyyy turns out of in-app chat UI', async ({ page, request }) =>
   await expect(page.getByText('npm run --silent game:loop')).toHaveCount(0)
   await expect(page.getByText('npm run --silent game:codex')).toHaveCount(0)
   await expect(page.getByText('npm run --silent game:play')).toHaveCount(0)
-  await expect(page.locator('.action-footer')).toContainText('Codexxyyy is thinking.')
+  await expect(page.locator('.action-footer')).toContainText('Codex task disconnected—return to Codex chat to resume.')
   await expect(page.getByRole('button', { name: 'Use fallback move' })).toHaveCount(0)
+})
+
+test('shows Codexxyyy as thinking only while a watcher is connected', async ({ page, request }) => {
+  await page.goto('/')
+  let state = (await (await request.post('/api/new-hand')).json()).state
+
+  for (let guard = 0; state.actingSeatId !== 'uplift' && guard < 6; guard += 1) {
+    const action = state.legalActions.find((item: { kind: string }) => item.kind === 'check' || item.kind === 'call') ?? state.legalActions[0]
+    state = (await (await request.post('/api/action', {
+      data: {
+        seat: 'user',
+        turnToken: state.turnToken,
+        action: action.kind,
+        amount: action.kind === 'bet' || action.kind === 'raise' ? action.min : undefined
+      }
+    })).json()).state
+  }
+
+  expect(state.actingSeatId).toBe('uplift')
+  const credential = JSON.parse(fs.readFileSync(path.resolve('data/watcher.json'), 'utf8')) as { token: string }
+  const controller = new AbortController()
+  const watcher = await fetch('http://127.0.0.1:5173/api/codex/events', {
+    headers: { 'x-codex-poker-watcher': credential.token },
+    signal: controller.signal
+  })
+  expect(watcher.ok).toBe(true)
+  await expect(page.locator('.action-footer')).toContainText('Codexxyyy is thinking.')
+
+  await watcher.body?.cancel()
+  controller.abort()
+  await expect(page.locator('.action-footer')).toContainText('Codexxyyy is thinking.')
 })
 
 test('prioritizes fast-fold simulation after Ali folds', async ({ page, request }) => {
@@ -213,7 +246,7 @@ test('lets the user size a bet or raise from the preview', async ({ page, reques
   expect(nextState.publicActions.some((action: { seatId: string; action: string; amount?: number }) =>
     action.seatId === 'user' && action.action === wager.kind && action.amount === amount
   )).toBe(true)
-  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy is thinking|Fold|Call|Check|Bet|Raise|Hand complete|Local bots/)
+  await expect(page.locator('.action-footer')).toContainText(/Following table action|Codexxyyy is thinking|Codex task disconnected|Fold|Call|Check|Bet|Raise|Hand complete|Local bots/)
 })
 
 function trailingBotRun(actions: Array<{ seatId: string; street: string; name: string }>) {
@@ -285,13 +318,13 @@ test('keeps completed-hand review data internal to the Codex chat loop', async (
   await expect(page.getByText('Review packet is ready')).toHaveCount(0)
   await expect(page.getByText('npm run --silent game:review')).toHaveCount(0)
   await expect(page.getByText('npm run --silent game:codex')).toHaveCount(0)
-  await expect(page.locator('.action-footer')).toContainText('Next hand')
+  await expect(page.locator('.action-footer')).toContainText('Hand complete. Choose review or next hand in Codex chat.')
+  await expect(page.getByRole('button', { name: 'Next hand' })).toHaveCount(0)
   if (state.board.length > 0) {
     await expect(page.locator('.community-cards .playing-card.empty')).toHaveCount(5 - state.board.length)
   }
 
-  await page.getByRole('button', { name: 'Next hand' }).click()
-  const freshState = (await (await request.get('/api/state')).json()).state
-  expect(freshState.phase).toBe('playing')
-  expect(freshState.review).toBeUndefined()
+  const completedState = (await (await request.get('/api/state')).json()).state
+  expect(completedState.phase).toBe('hand-complete')
+  expect(completedState.review).toBeTruthy()
 })
