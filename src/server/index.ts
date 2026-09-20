@@ -38,7 +38,12 @@ export function createServer(
   const agentActionSchema = actionRequestSchema
     .omit({ seat: true })
     .extend({ requestId: z.string().min(1).max(120) })
-    .strict();
+    .strict()
+    .refine(
+      (value) =>
+        ["bet", "raise"].includes(value.action) || value.amount === undefined,
+      { message: "Only bets and raises accept an amount." },
+    );
   app.get("/api/agent/table", async () => ({
     ok: true,
     state: game.getAgentSnapshot(),
@@ -65,8 +70,16 @@ export function createServer(
         );
       return previous.result;
     }
-    game.submitAction({ ...action, seat: "uplift" });
-    const result = { ok: true, played: action, state: game.getAgentSnapshot() };
+    const after = game.submitAction({ ...action, seat: "uplift" });
+    const played = after.publicActions
+      .filter((item) => item.seatId === "uplift")
+      .at(-1)!;
+    const result = structuredClone({
+      ok: true,
+      requestId,
+      played,
+      state: game.getAgentSnapshot(),
+    });
     receipts.set(requestId, { fingerprint, result });
     if (receipts.size > 256) receipts.delete(receipts.keys().next().value!);
     return result;

@@ -50,6 +50,11 @@ function App() {
   const [pending, setPending] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const stateRevision = useRef(0);
+  function acceptState(next: GameSnapshot) {
+    stateRevision.current += 1;
+    setState(next);
+  }
   const historyRef = useRef<HTMLElement>(null);
   const historyButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -75,7 +80,7 @@ function App() {
     const events = new EventSource("/events");
     events.onopen = () => setConnected(true);
     events.addEventListener("state", (e) => {
-      setState(JSON.parse((e as MessageEvent).data));
+      acceptState(JSON.parse((e as MessageEvent).data));
       setConnected(true);
       setError("");
     });
@@ -93,15 +98,10 @@ function App() {
     if (connected) return;
     let alive = true;
     const timer = window.setInterval(() => {
+      const revision = stateRevision.current;
       request("/api/state")
         .then((next) => {
-          if (alive)
-            setState((current) =>
-              current?.handId === next.handId &&
-              current.actionSeq > next.actionSeq
-                ? current
-                : next,
-            );
+          if (alive && revision === stateRevision.current) acceptState(next);
         })
         .catch(() => {});
     }, 1500);
@@ -112,10 +112,11 @@ function App() {
   }, [connected]);
   async function act(action: LegalAction, amount?: number) {
     if (!state || pending) return;
+    stateRevision.current += 1;
     setPending(true);
     setError("");
     try {
-      setState(
+      acceptState(
         await request("/api/action", {
           seat: "user",
           turnToken: state.turnToken,
@@ -126,7 +127,7 @@ function App() {
     } catch (e) {
       setError((e as Error).message);
       request("/api/state")
-        .then(setState)
+        .then(acceptState)
         .catch(() => {});
     } finally {
       setPending(false);
@@ -134,10 +135,11 @@ function App() {
   }
   async function next() {
     if (!state || pending) return;
+    stateRevision.current += 1;
     setPending(true);
     setError("");
     try {
-      setState(await request("/api/new-hand", { handId: state.handId }));
+      acceptState(await request("/api/new-hand", { handId: state.handId }));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -185,7 +187,7 @@ function App() {
           <button
             onClick={() =>
               request("/api/state")
-                .then(setState)
+                .then(acceptState)
                 .then(() => setError(""))
                 .catch((e) => setError(e.message))
             }

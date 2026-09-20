@@ -96,3 +96,72 @@ test("HTTP controls and refresh remain usable when the event stream is unavailab
     page.getByRole("button", { name: "Check", exact: true }),
   ).toBeEnabled({ timeout: 6000 });
 });
+
+test("a delayed HTTP poll cannot restore the previous hand after dealing", async ({
+  page,
+  request,
+}) => {
+  const live = (await (await request.get("/api/state")).json()).state;
+  const old = {
+    ...live,
+    handId: "old-hand",
+    phase: "hand-complete",
+    actingSeatId: null,
+    review: {
+      handId: "old-hand",
+      completedAt: new Date().toISOString(),
+      bankrollDelta: 0,
+      bankrollAfter: 10000,
+      ratingDelta: 0,
+      ratingAfter: 1000,
+      board: [],
+      finalPot: 100,
+      winningSeatIds: ["user"],
+      winningHandName: "Last player standing",
+      lesson: "",
+      publicActions: [],
+      showdownCards: {},
+    },
+  };
+  const fresh = {
+    ...live,
+    handId: "fresh-hand",
+    phase: "playing",
+    review: undefined,
+    actingSeatId: "user",
+    actionSeq: 0,
+    legalActions: [{ kind: "check" }],
+  };
+  let current = old,
+    reads = 0,
+    releaseOld: (() => void) | undefined;
+  await page.route("**/events", (route) => route.abort());
+  await page.route("**/api/state", async (route) => {
+    const captured = current;
+    if (++reads === 2)
+      await new Promise<void>((resolve) => {
+        releaseOld = resolve;
+      });
+    await route.fulfill({ json: { ok: true, state: captured } });
+  });
+  await page.route("**/api/new-hand", async (route) => {
+    current = fresh;
+    await route.fulfill({ json: { ok: true, state: fresh } });
+  });
+  await page.goto("/");
+  await expect.poll(() => Boolean(releaseOld)).toBe(true);
+  await page.getByRole("button", { name: "Next hand" }).click();
+  await expect(
+    page.getByRole("button", { name: "Check", exact: true }),
+  ).toBeVisible();
+  const lateResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/state"),
+  );
+  releaseOld!();
+  await lateResponse;
+  await page.waitForTimeout(250); // Allow the deliberately delayed response to reach React.
+  await expect(
+    page.getByRole("button", { name: "Check", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Next hand" })).toHaveCount(0);
+});

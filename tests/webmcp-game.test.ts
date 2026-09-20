@@ -71,6 +71,7 @@ describe("WebMCP game contract", () => {
       payload,
     });
     expect(first.statusCode).toBe(200);
+    play(game.getSnapshot()); // A later human action must not mutate the cached receipt.
     const seq = game.getSnapshot().actionSeq;
     const retry = await app.inject({
       method: "POST",
@@ -212,4 +213,43 @@ it("preserves an all-in player as live, with a zero stack", () => {
   expect(human.stack).toBe(0);
   expect(human.isFolded).toBe(false);
   expect(after.actingSeatId).toBe("uplift");
+});
+
+it("rejects irrelevant amounts and receipts report the actual call amount", async () => {
+  const before = game.getSnapshot();
+  const raise = before.legalActions.find((a) => a.kind === "raise")!;
+  game.submitAction({
+    seat: "user",
+    turnToken: before.turnToken,
+    action: "raise",
+    amount: raise.min,
+  });
+  const turn = game.getSnapshot();
+  const expected = turn.legalActions.find((a) => a.kind === "call")!.toCall;
+  const rejected = await app.inject({
+    method: "POST",
+    url: "/api/agent/action",
+    payload: {
+      requestId: "bad-amount",
+      turnToken: turn.turnToken,
+      action: "call",
+      amount: 10000,
+    },
+  });
+  expect(rejected.statusCode).toBe(400);
+  expect(game.getSnapshot().turnToken).toBe(turn.turnToken);
+  const accepted = await app.inject({
+    method: "POST",
+    url: "/api/agent/action",
+    payload: {
+      requestId: "real-call",
+      turnToken: turn.turnToken,
+      action: "call",
+    },
+  });
+  expect(accepted.statusCode).toBe(200);
+  expect(accepted.json().played).toMatchObject({
+    action: "call",
+    amount: expected,
+  });
 });
