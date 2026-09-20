@@ -25,3 +25,13 @@ Accepted outcome: Ali and the Codex in this chat play a real local play-money ga
 - Initial inspection: pre-existing uncommitted createRequire import correction in game-service.ts; preserve.
 - Current normal CLI loop selects heuristic actions. Fast-forward also substitutes for Codex. Browser playback delays actions 2–4 seconds and combines delayed history with current state.
 - OpenAI documentation uses document.modelContext.registerTool at page top level. Host availability and unsolicited wakeup must be tested.
+
+## Current implementation evidence
+- Native WebMCP discovery and a real action verified in Codex in-app browser. Active bounded wait returned when a tester clicked Call. This is not idle-chat wakeup.
+- Independent fresh-context skill test independently chose a Codex move and stopped at Ali; no cards disclosed, no shell gameplay. See docs/evals/blind-play-01.md.
+- Independent first-use UX evaluation found mobile side-label contrast and below-fold history disclosure issues. Fixes implemented; retest blocked when browser became unavailable.
+- Fable consultation completed through native Claude app; findings applied selectively. Thinking is derived from actual turn-tool activity, never merely turn ownership.
+- Old settlement auto-balancer removed. poker-ts still owns betting/dealing; explicit contribution-based settlement handles side pots and exact best-five hand ranking. Tests include 100 varied hands and exact side-pot/tie/odd-chip examples.
+- Both local Codex and Claude skill folders now symlink to repository skills/codex-poker; previous folders preserved under each client's skill-backups. Skill validator passes.
+- Default remote branch is master and contains newer runtime supervision/reconnect changes absent from initial checkout. Integration in progress; preserve startup identity/health verification.
+- Remaining gates: upstream reconciliation, regression/build checks, complete ten-hand session, post-fix blinded UX retest, reviewed PR/merge and final local production-build verification.

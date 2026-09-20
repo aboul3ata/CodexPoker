@@ -20,4 +20,4 @@ Use integration tests for stale token, same request repeated, changed request ID
 For each run: evaluator/context provenance, app revision, viewport, task prompt, actual observations, failures, timestamps, evidence paths and retest result. Preserve critical findings even if later fixed. Do not claim ten-hand natural-language success from automated simulation. Mark unrun rounds explicitly.
 
 ## Current status
-Protocol prepared. Native WebMCP discovery, one action and an active wait wakeup verified by the builder; not blinded. Independent evaluations pending. Fable consultation requested through native app but submission not yet verified.
+Native WebMCP discovery, one action and an active wait wakeup verified by the builder. Independent single-decision skill evaluation completed (blind-play-01.md); independent first-use UX evaluation completed (blind-ux-01.md). Fable consultation completed through the Claude app (fable-consultation-result.md), explicitly not blinded. Post-fix UX retest currently blocked by unavailable in-app browser. Ten-hand natural-language session remains pending.

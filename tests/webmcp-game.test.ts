@@ -170,3 +170,26 @@ describe("WebMCP game contract", () => {
     }
   });
 });
+
+it('marks thinking only after a real Codex turn read and supports legal reraises', () => {
+  expect(game.getSnapshot().codexPresence).toBe('away')
+  const before = game.getSnapshot()
+  const raise = before.legalActions.find(a => a.kind === 'raise')!
+  const after = game.submitAction({seat:'user',turnToken:before.turnToken,action:'raise',amount:raise.min})
+  expect(after.actingSeatId).toBe('uplift')
+  expect(after.codexPresence).toBe('away')
+  const turn = game.getCodexTurn()
+  expect(turn.codexPresence).toBe('thinking')
+  expect(turn.legalActions.some(a => a.kind === 'raise')).toBe(true)
+  game.submitAction({seat:'uplift',turnToken:turn.turnToken,action:'call'})
+  expect(game.getSnapshot().codexPresence).toBe('away')
+})
+it('preserves an all-in player as live, with a zero stack', () => {
+  const before = game.getSnapshot()
+  const raise = before.legalActions.find(a => a.kind === 'raise')!
+  const after = game.submitAction({seat:'user',turnToken:before.turnToken,action:'raise',amount:raise.max})
+  const human=after.seats.find(s=>s.seatId==='user')!
+  expect(human.stack).toBe(0)
+  expect(human.isFolded).toBe(false)
+  expect(after.actingSeatId).toBe('uplift')
+})

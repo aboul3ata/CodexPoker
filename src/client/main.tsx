@@ -9,6 +9,7 @@ import type {
 } from "../shared/contracts";
 import { registerPokerTools } from "./webmcp";
 import "./styles.css";
+import { fetchStateWithRetry } from "./state-loader";
 
 const chips = (n: number) => n.toLocaleString("en-US");
 const suits = { clubs: "♣", diamonds: "♦", hearts: "♥", spades: "♠" };
@@ -71,8 +72,8 @@ function App() {
   }
   useEffect(() => {
     let alive = true;
-    request("/api/state")
-      .then((s) => alive && setState(s))
+    fetchStateWithRetry()
+      .then((s) => alive && setState((current) => current ?? s))
       .catch((e) => alive && setError(e.message));
     const events = new EventSource("/events");
     events.onopen = () => setConnected(true);
@@ -308,7 +309,9 @@ function App() {
                   </strong>
                   <span>
                     {ready
-                      ? "Say “turn” in chat."
+                      ? state.codexPresence === "away"
+                        ? "Say “turn” in chat."
+                        : "The next move comes from chat."
                       : "Open in the Codex browser to play."}
                   </span>
                 </div>

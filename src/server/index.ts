@@ -1,6 +1,7 @@
 import fastifyStatic from "@fastify/static";
 import Fastify, { type FastifyInstance } from "fastify";
 import fs from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { z } from "zod";
@@ -9,7 +10,10 @@ import { DomainError, MalformedCommandError } from "./errors";
 import { GameService } from "./game-service";
 import { ensureDataDirs, getDataDir, pathFromRoot } from "./paths";
 
-export function createServer(game = new GameService()): FastifyInstance {
+export function createServer(
+  game = new GameService(),
+  runtimeId = process.env.CODEX_POKER_RUNTIME_ID ?? randomUUID(),
+): FastifyInstance {
   const app = Fastify({ logger: false });
 
   app.setErrorHandler((error, request, reply) => {
@@ -21,6 +25,15 @@ export function createServer(game = new GameService()): FastifyInstance {
     reply.status(statusCode).send({ ok: false, code, message });
   });
 
+  app.get("/api/health", async () => ({
+    ok: true,
+    app: "codex-poker",
+    schemaVersion: 1,
+    runtimeId,
+    pid: process.pid,
+    repoRoot: pathFromRoot(),
+    ready: true,
+  }));
   const receipts = new Map<string, { fingerprint: string; result: unknown }>();
   const agentActionSchema = actionRequestSchema
     .omit({ seat: true })
@@ -174,6 +187,8 @@ export function createServer(game = new GameService()): FastifyInstance {
 
 export async function startServer(port = Number(process.env.PORT ?? 8797)) {
   ensureDataDirs();
+  const delay = Number(process.env.CODEX_POKER_API_START_DELAY_MS ?? 0);
+  if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
   const app = createServer();
   await app.listen({ host: "127.0.0.1", port });
   fs.writeFileSync(

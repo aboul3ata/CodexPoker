@@ -49,3 +49,7 @@ After scrolling down, the panel was readable and well aligned. It showed Pip, No
 3. Preserve the current clear human-turn and pot hierarchy while fixing narrow layouts. The stronger treatment of You and Codex is understandable without explanation.
 
 Evidence consists of direct CUA screenshots and DOM/AX observations from this evaluation; screenshots were inspected in tool output, not exported to separate files. No game state was changed. Hand history was closed and the temporary viewport override was reset before completion.
+
+## Retest attempt after fixes
+
+Retest requested for 640×800 and 390×844, covering side-seat labels, opening history, and decision-control fit. This attempt could not reach the UI: the earlier CUA browser ID was unavailable, current CUA inventory returned an empty browsers list, and opening a new `iab` tab also returned “Browser is not available.” No post-fix visual conclusions can be drawn from this attempt. No viewport override or game-state change was made.
