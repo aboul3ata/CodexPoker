@@ -28,7 +28,7 @@ describe('runtime supervisor', () => {
     occupiedPort = net.createServer()
     await new Promise<void>((resolve, reject) => {
       occupiedPort?.once('error', reject)
-      occupiedPort?.listen(5173, '127.0.0.1', resolve)
+      occupiedPort?.listen(0, '127.0.0.1', resolve)
     })
 
     supervisor = spawn(process.execPath, [
@@ -41,14 +41,14 @@ describe('runtime supervisor', () => {
         CODEX_POKER_DATA_DIR: tempDir,
         CODEX_POKER_API_START_DELAY_MS: '300',
         PORT: '18897',
-        CODEX_POKER_PREVIEW_PORT: '5173'
+        CODEX_POKER_PREVIEW_PORT: String((occupiedPort!.address() as net.AddressInfo).port)
       },
       stdio: ['ignore', 'pipe', 'pipe']
     })
 
     const manifest = await waitForManifest(path.join(tempDir, 'runtime.json'))
     expect(manifest.apiUrl).toBe('http://127.0.0.1:18897')
-    expect(manifest.previewUrl).not.toBe('http://127.0.0.1:5173')
+    expect(manifest.previewUrl).not.toBe(`http://127.0.0.1:${(occupiedPort!.address() as net.AddressInfo).port}`)
     const health = await (await fetch(`${manifest.previewUrl}/api/health`)).json() as { runtimeId: string }
     expect(health.runtimeId).toBe(manifest.runtimeId)
   }, 15000)

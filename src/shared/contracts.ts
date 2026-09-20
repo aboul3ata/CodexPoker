@@ -78,6 +78,7 @@ export type HandHistoryPoint = {
 
 export type GameSnapshot = {
   schemaVersion: 1
+  codexPresence: 'thinking' | 'watching' | 'away'
   handId: string
   phase: GamePhase
   street: Street
@@ -95,7 +96,6 @@ export type GameSnapshot = {
   tendencySummary: string
   sessionGoal: string
   tableNotice?: string
-  codexConnection: 'connected' | 'disconnected'
   bridgeStatus: 'waiting-for-codex' | 'local-bots-moving' | 'user-to-act' | 'hand-complete'
   review?: ReviewSnapshot
 }
@@ -108,54 +108,3 @@ export const actionRequestSchema = z.object({
 })
 
 export type ActionRequest = z.infer<typeof actionRequestSchema>
-
-export type CurrentTurnPacket = {
-  schemaVersion: 1
-  handId: string
-  seat: 'uplift'
-  turnToken: string
-  street: Street
-  actionSeq: number
-  holeCards: Card[]
-  board: Card[]
-  pot: number
-  stacks: Record<SeatId, number>
-  bets: Record<SeatId, number>
-  position: Record<SeatId, string>
-  legalActions: LegalAction[]
-  publicActionHistory: PublicAction[]
-  userTendencies: string
-}
-
-export type LatestHandPacket = {
-  schemaVersion: 1
-  handId: string
-  completedAt: string
-  userSeat: 'user'
-  result: {
-    bankrollDelta: number
-    bankrollAfter: number
-    ratingDelta: number
-    ratingAfter: number
-    winningSeatIds: SeatId[]
-  }
-  visibleDecisionSnapshots: PublicAction[]
-  publicActions: PublicAction[]
-  lesson: string
-  showdown?: {
-    board: Card[]
-    revealedHands: Partial<Record<SeatId, Card[]>>
-    winningHandName: string
-  }
-  reviewPrompt: string
-}
-
-export type LastErrorPacket = {
-  schemaVersion: 1
-  at: string
-  command: 'game:act'
-  handId?: string
-  turnToken?: string
-  code: 'invalid_action' | 'stale_turn' | 'wrong_seat' | 'not_to_act' | 'malformed_command' | 'storage_unavailable'
-  message: string
-}

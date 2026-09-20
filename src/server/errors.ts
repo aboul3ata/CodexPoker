@@ -16,7 +16,7 @@ export class InvalidActionError extends DomainError {
 }
 
 export class StaleTurnError extends DomainError {
-  constructor(message = 'That turn token is stale. Read the current bridge packet and try again.') {
+  constructor(message = 'That turn token is stale. Read the current table and try again.') {
     super(message, 'stale_turn', 409, 3)
   }
 }

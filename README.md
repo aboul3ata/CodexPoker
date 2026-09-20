@@ -1,53 +1,35 @@
 # CodexPoker
 
-CodexPoker is a local-first Texas Hold’em game built around one continuous Codex task. Ali plays on the table in the Codex preview; Codexxyyy acts, banters, and reviews hands in the main Codex chat. The preview stays table-only.
+A local play-chip poker table for you and the Codex in your chat, against four local bots. Open the table in Codex's built-in browser. Your cards and controls live in the browser; Codex chooses its own moves through native WebMCP and talks in chat.
 
-## Play
-
-1. Clone this repository.
-2. Open the repository in Codex.
-3. Say: **Play CodexPoker.**
-
-The repo-native CodexPoker skill installs dependencies when needed, starts and verifies the local runtime, opens the discovered preview URL in the Codex in-app Browser, and keeps the same task alive while you play. Startup progress and any recovery diagnostics appear in chat.
-
-Supported local tooling:
-
-- Node `^20.19.0 || >=22.12.0`
-- npm `10.9.8` (pinned by `packageManager`)
-
-The recommended Node version is recorded in both `.nvmrc` and `.node-version`.
-
-## Runtime commands
-
-```bash
-npm run --silent game:start -- --json
-npm run --silent game:doctor -- --json
-npm run --silent game:watch
+```sh
+npm ci
+npm run dev
 ```
 
-- `game:start` reuses a healthy runtime or launches a supervised Fastify-then-Vite runtime. Its JSON includes the verified `previewUrl`, `apiUrl`, runtime ID, PID, and reuse status.
-- `game:doctor` checks Node compatibility, native SQLite loading, the repo skill, runtime/process health, port 5173 handling, and preview reachability.
-- `game:watch` holds a public-safe watcher lease and returns when the table changes. Its events exclude hole cards, legal/private recommendations, reviews, and turn tokens.
+Open the preview URL printed by the launcher (normally http://127.0.0.1:5173) and ask Codex to play. The launcher verifies the API identity before opening the preview; it selects another available port when necessary and records it in `data/runtime.json`. Say **turn**, **your move**, or **go** when you want Codex to continue. Codex never plays your seat. When you fold, Codex continues its own hand. There is no fallback strategy impersonating Codex.
 
-Runtime metadata is stored in `data/runtime.json`. It is versioned, contains no secrets, and is trusted only when its process is alive and its health identity matches. Explicit `CODEX_POKER_SERVER_URL` configuration takes precedence. Structured runtime logs are written to `data/logs/runtime.log`.
+## Page tools
 
-## Codex play commands
+`get_table` returns a public table view without your cards. `get_my_turn` adds only Codex's private cards and its legal moves. `act` submits only Codex's move, with a turn token and idempotent request ID. `next_hand` requires a completed hand ID. `get_hand_history` provides public review evidence. `wait_for_event` waits up to 15 seconds for a state change during an active agent turn; it cannot wake a chat that has finished responding.
 
-- `npm run --silent game:loop` — safely advances Codexxyyy, fast-forwards after Ali folds, or stops at Ali/review.
-- `npm run --silent game:state` — prints public-safe state and the next Codex step.
-- `npm run --silent game:banter` — produces public-safe table talk for the main chat.
-- `npm run --silent game:review -- --mode accepted` — prepares a review only after Ali accepts it.
-- `npm run --silent game:next` — starts a hand only after Ali chooses next hand in chat.
+Tools register with `document.modelContext` (or the compatible navigator surface). They require a host that supports WebMCP. The browser UI remains usable when tools are unavailable. Verify native tool availability in the actual Codex browser; registration tests alone are insufficient.
 
-Private debugging commands (`game:turn`, `game:play`, and `game:act`) are for Codexxyyy action selection only. Their private output must never be copied into chat.
+This is casual local hidden-information play. The agent view excludes opponents' cards, and public state never includes Codex's hole cards before a legitimate showdown. A person inspecting browser tools or local server data can still see private information. Use only public table information for banter; don't inspect Ali's visible browser cards while playing Codex.
 
-## Development
+## Engine and storage
 
-```bash
-npm install
-npm test
-npm run build
-npm run test:e2e
-```
+`poker-ts` handles the deck, betting order, legal moves and street transitions. The server owns each turn. Settlement uses recorded contributions and best-five-of-seven hand evaluation, including side pots, folded-player exclusion, uncalled bet returns, split pots and clockwise odd chips. No arbitrary balance correction is applied. Completed hands and the profile commit together in SQLite. Existing historical bankroll and rating data are preserved; new hands do not calculate a synthetic Elo score.
 
-`npm run dev` uses the same deterministic supervisor as `game:start`: Fastify becomes healthy first, then Vite starts on an available preview port, then the proxied health endpoint is verified.
+The active hand survives browser refresh/reconnection, but is in server memory. Restarting the server starts a fresh hand from the last completed profile. A new hand cannot interrupt an active one. Low stacks refill with play chips between hands and the table discloses the refill.
+
+## Development and verification
+
+- `npm run typecheck`
+- `npm test`: perspective, idempotency, legal-turn, event-wait and settlement regressions; 100 varied hands.
+- `npm run build`
+- Browser acceptance and blinded evaluation tasks: [docs/evals/PROTOCOL.md](docs/evals/PROTOCOL.md).
+
+Use `CODEX_POKER_DATA_DIR=/tmp/codexpoker-eval-<run-id> npm run dev` for disposable evaluation sessions. Do not run game mutations against a personal saved profile during QA. The server binds only to loopback.
+
+See [docs/REBUILD.md](docs/REBUILD.md) for the completion gates and current evidence.

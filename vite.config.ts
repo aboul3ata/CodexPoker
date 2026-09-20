@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '127.0.0.1',
-    port: 5173,
+    port: Number(process.env.VITE_PORT ?? 5173),
     strictPort: false,
     proxy: {
       '/api': process.env.CODEX_POKER_API_URL ?? 'http://127.0.0.1:8797',
