@@ -718,10 +718,7 @@ export class GameService {
       );
       const isFolded = foldedByAction;
       const isWinner = winningSeatIds.includes(seatId);
-      const cards =
-        seatId === "user" && !this.review
-          ? (holes[index] ?? undefined)
-          : undefined;
+      const cards = seatId === "user" ? (holes[index] ?? undefined) : undefined;
       const revealedCards = this.review?.showdownCards[seatId];
       const stack = this.review
         ? this.seatStacks[seatId]

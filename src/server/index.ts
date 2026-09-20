@@ -110,7 +110,7 @@ export function createServer(
         stopWatching();
         resolve(undefined);
       };
-      const timer = setTimeout(() => finish(false), 20000);
+      const timer = setTimeout(() => finish(false), 15000);
       reply.raw.once("close", closed);
       unsubscribe = game.subscribe(() => {
         if (game.getAgentSnapshot().cursor !== parsed.data.cursor) finish(true);

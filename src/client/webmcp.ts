@@ -93,7 +93,7 @@ export async function registerPokerTools() {
     {
       name: "wait_for_event",
       description:
-        "Wait up to 20 seconds for a public poker state change after cursor from get_table. Returns immediately if state already changed. Used during an active play session to notice Ali’s browser action. Does not wake an idle chat. On timeout let the user say turn to resume; do not busy-poll.",
+        "Wait up to 15 seconds for a public poker state change after cursor from get_table. Returns immediately if state already changed. Used during an active play session to notice Ali’s browser action. Does not wake an idle chat. On timeout let the user say turn to resume; do not busy-poll.",
       inputSchema: object({ cursor: { type: "string" } }, ["cursor"]),
       annotations: { readOnlyHint: true },
       execute: (input) =>

@@ -11,9 +11,13 @@ import { ensureDataDirs, getDataDir, pathFromRoot } from "../src/server/paths";
 
 const runtimeId = process.env.CODEX_POKER_RUNTIME_ID ?? randomUUID();
 const apiPort = await findOpenPort(Number(process.env.PORT ?? 8797));
-const previewPort = await findOpenPort(
-  Number(process.env.CODEX_POKER_PREVIEW_PORT ?? process.env.VITE_PORT ?? 5173),
+const requestedPreviewPort = Number(
+  process.env.CODEX_POKER_PREVIEW_PORT ?? process.env.VITE_PORT ?? 5173,
 );
+const previewPort =
+  process.env.CODEX_POKER_PREVIEW_STRICT === "1"
+    ? requestedPreviewPort
+    : await findOpenPort(requestedPreviewPort);
 const apiUrl = `http://127.0.0.1:${apiPort}`;
 const previewUrl = `http://127.0.0.1:${previewPort}`;
 const children: ChildProcess[] = [];

@@ -11,7 +11,7 @@ export default defineConfig({
     trace: 'on-first-retry'
   },
   webServer: {
-    command: 'CODEX_POKER_DATA_DIR=$(mktemp -d /tmp/codexpoker-e2e.XXXXXX) VITE_PORT=5193 npm run dev',
+    command: 'CODEX_POKER_DATA_DIR=$(mktemp -d /tmp/codexpoker-e2e.XXXXXX) VITE_PORT=5193 CODEX_POKER_PREVIEW_STRICT=1 npm run dev',
     url: 'http://127.0.0.1:5193',
     reuseExistingServer: false,
     timeout: 30000

@@ -47,3 +47,52 @@ test("opens hand history without altering the game", async ({ page }) => {
     0,
   );
 });
+
+test("HTTP controls and refresh remain usable when the event stream is unavailable", async ({
+  page,
+  request,
+}) => {
+  const live = (await (await request.get("/api/state")).json()).state;
+  let state = {
+    ...live,
+    actingSeatId: "user",
+    phase: "playing",
+    turnToken: "test-turn",
+    legalActions: [{ kind: "check" }],
+  };
+  await page.route("**/events", (route) => route.abort());
+  await page.route("**/api/state", (route) =>
+    route.fulfill({ json: { ok: true, state } }),
+  );
+  await page.route("**/api/action", async (route) => {
+    expect(route.request().postDataJSON()).toMatchObject({
+      seat: "user",
+      action: "check",
+      turnToken: "test-turn",
+    });
+    state = {
+      ...state,
+      actingSeatId: "uplift",
+      actionSeq: state.actionSeq + 1,
+      legalActions: [],
+    };
+    await route.fulfill({ json: { ok: true, state } });
+  });
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Check", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Check", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Check", exact: true }),
+  ).toHaveCount(0);
+  state = {
+    ...state,
+    actingSeatId: "user",
+    actionSeq: state.actionSeq + 1,
+    legalActions: [{ kind: "check" }],
+  };
+  await expect(
+    page.getByRole("button", { name: "Check", exact: true }),
+  ).toBeEnabled({ timeout: 6000 });
+});

@@ -95,7 +95,10 @@ export class Storage {
         lesson: "",
         showdownCards: Object.fromEntries(
           Object.entries(review.showdownCards ?? {}).filter(
-            ([id]) => review.board.length === 5 && !folded.has(id as SeatId),
+            ([id]) =>
+              review.board.length === 5 &&
+              folded.size < 5 &&
+              !folded.has(id as SeatId),
           ),
         ),
       };

@@ -7,11 +7,11 @@ npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5173 and ask Codex to play. Say **turn**, **your move**, or **go** when you want Codex to continue. Codex never plays your seat. When you fold, Codex continues its own hand. There is no fallback strategy impersonating Codex.
+Open the preview URL printed by the launcher (normally http://127.0.0.1:5173) and ask Codex to play. The launcher verifies the API identity before opening the preview; it selects another available port when necessary and records it in `data/runtime.json`. Say **turn**, **your move**, or **go** when you want Codex to continue. Codex never plays your seat. When you fold, Codex continues its own hand. There is no fallback strategy impersonating Codex.
 
 ## Page tools
 
-`get_table` returns a public table view without your cards. `get_my_turn` adds only Codex's private cards and its legal moves. `act` submits only Codex's move, with a turn token and idempotent request ID. `next_hand` requires a completed hand ID. `get_hand_history` provides public review evidence. `wait_for_event` waits up to 20 seconds for a state change during an active agent turn; it cannot wake a chat that has finished responding.
+`get_table` returns a public table view without your cards. `get_my_turn` adds only Codex's private cards and its legal moves. `act` submits only Codex's move, with a turn token and idempotent request ID. `next_hand` requires a completed hand ID. `get_hand_history` provides public review evidence. `wait_for_event` waits up to 15 seconds for a state change during an active agent turn; it cannot wake a chat that has finished responding.
 
 Tools register with `document.modelContext` (or the compatible navigator surface). They require a host that supports WebMCP. The browser UI remains usable when tools are unavailable. Verify native tool availability in the actual Codex browser; registration tests alone are insufficient.
 

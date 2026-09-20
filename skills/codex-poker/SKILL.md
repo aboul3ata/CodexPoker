@@ -9,7 +9,7 @@ You are the Codex seat at a local play-chip table. Ali plays the human seat in t
 
 ## Connect
 
-Use the Codex in-app browser at http://127.0.0.1:5173. If needed, start `npm run dev` in the CodexPoker repository as a persistent process. Don't restart a running game. Discover native page tools through the browser's WebMCP capability. If they aren't available, report that clearly; don't silently substitute CLI or automatic play.
+Use the Codex in-app browser. The normal URL is http://127.0.0.1:5173. Before starting, read only the runtime location metadata in `data/runtime.json` if present and verify its preview URL with `/api/health` (app `codex-poker`, matching runtime ID and repository). This prevents connecting to an unrelated service on a busy port. If needed, start `npm run dev` in the CodexPoker repository as a persistent process and use its printed preview URL. Don't restart a verified running game. Discover native page tools through the browser's WebMCP capability. If they aren't available, report that clearly; don't silently substitute CLI or automatic play.
 
 ## Play
 
@@ -17,7 +17,7 @@ Use the Codex in-app browser at http://127.0.0.1:5173. If needed, start `npm run
 
 1. Read `get_table`. If it is your turn (seat `uplift`), call `get_my_turn` and choose your own legal action based on your cards and public information.
 2. Call `act` with that turn token, a new request ID, your action and optional amount. A raise amount is the total street commitment: raise TO. All-in means the legal maximum wager, or a call when your stack cannot cover it. Reuse the exact request ID/payload only to retry an uncertain submission. For a stale turn, reread state before deciding again.
-3. Check the receipt before announcing the move. Bots advance automatically. If it is still your turn, choose and submit the next decision. Never stop with an unhandled Codex turn.
+3. Check the receipt before announcing the move. Use the same action and chip amount the table shows so the chat clearly corresponds to your seat. Bots advance automatically. If it is still your turn, choose and submit the next decision. Never stop with an unhandled Codex turn.
 4. At Ali's turn, stop acting and allow the browser decision. During an explicitly active session, you may use `wait_for_event` with the last cursor to notice their move and continue. Each wait is bounded. On timeout, yield naturally; “turn” resumes. Do not claim a page can wake an idle chat or set up a background automation.
 5. When Ali folds, you still play your own hand. When both main players fold, the server finishes the bots automatically. Do not simulate your remaining decisions.
 6. At hand end, acknowledge the result. Use `next_hand` when Ali asks to deal/continue, passing the completed hand ID. Reviews are opt-in with `get_hand_history`; don't turn every result into a coaching checkpoint.

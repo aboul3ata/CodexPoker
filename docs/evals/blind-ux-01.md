@@ -53,3 +53,7 @@ Evidence consists of direct CUA screenshots and DOM/AX observations from this ev
 ## Retest attempt after fixes
 
 Retest requested for 640×800 and 390×844, covering side-seat labels, opening history, and decision-control fit. This attempt could not reach the UI: the earlier CUA browser ID was unavailable, current CUA inventory returned an empty browsers list, and opening a new `iab` tab also returned “Browser is not available.” No post-fix visual conclusions can be drawn from this attempt. No viewport override or game-state change was made.
+
+## Builder verification after fixes (not blinded)
+
+The parent reopened the task via Codex navigation and verified the app in the actual in-app browser. At 390×844 all four bot names and stacks now sit on opaque paper surfaces and are fully readable. Your cards and Fold/Call/Raise controls fit within the viewport. At 640×800 the controls occupy y=637 through y=740, with no horizontal overflow. Opening Hand history now scrolls the heading and action rows into view and focuses the region; closing it returns focus to the trigger. Both viewports were visually inspected, and the viewport override was reset. The independent evaluator's initial findings remain above; the retest was performed by the builder because the subagent no longer received browser access.

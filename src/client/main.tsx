@@ -21,13 +21,10 @@ const names = {
   clio: "Clio",
   atlas: "Atlas",
 };
-let toolsReady = false;
-void registerPokerTools()
-  .then((ready) => {
-    toolsReady = ready;
-    window.dispatchEvent(new Event("poker-tools"));
-  })
-  .catch(console.error);
+const toolsReady = registerPokerTools().catch((error) => {
+  console.error(error);
+  return false;
+});
 
 async function request(path: string, body?: unknown): Promise<GameSnapshot> {
   const response = await fetch(
@@ -52,7 +49,7 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [pending, setPending] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [ready, setReady] = useState(toolsReady);
+  const [ready, setReady] = useState(false);
   const historyRef = useRef<HTMLElement>(null);
   const historyButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -83,14 +80,36 @@ function App() {
       setError("");
     });
     events.onerror = () => setConnected(false);
-    const tools = () => setReady(toolsReady);
-    window.addEventListener("poker-tools", tools);
+    void toolsReady.then((ready) => {
+      if (alive) setReady(ready);
+    });
     return () => {
       alive = false;
       events.close();
-      window.removeEventListener("poker-tools", tools);
     };
   }, []);
+  // HTTP remains a usable fallback while EventSource reconnects.
+  useEffect(() => {
+    if (connected) return;
+    let alive = true;
+    const timer = window.setInterval(() => {
+      request("/api/state")
+        .then((next) => {
+          if (alive)
+            setState((current) =>
+              current?.handId === next.handId &&
+              current.actionSeq > next.actionSeq
+                ? current
+                : next,
+            );
+        })
+        .catch(() => {});
+    }, 1500);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [connected]);
   async function act(action: LegalAction, amount?: number) {
     if (!state || pending) return;
     setPending(true);
@@ -288,7 +307,7 @@ function App() {
                 key={state.turnToken}
                 actions={state.legalActions}
                 pot={state.pot}
-                disabled={pending || !connected}
+                disabled={pending}
                 onAction={act}
               />
             ) : (

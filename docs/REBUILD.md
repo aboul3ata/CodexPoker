@@ -35,3 +35,18 @@ Accepted outcome: Ali and the Codex in this chat play a real local play-money ga
 - Both local Codex and Claude skill folders now symlink to repository skills/codex-poker; previous folders preserved under each client's skill-backups. Skill validator passes.
 - Default remote branch is master and contains newer runtime supervision/reconnect changes absent from initial checkout. Integration in progress; preserve startup identity/health verification.
 - Remaining gates: upstream reconciliation, regression/build checks, complete ten-hand session, post-fix blinded UX retest, reviewed PR/merge and final local production-build verification.
+- Upstream integration complete: retained supervised startup, runtime health identity and state-load retries; retired old watcher/CLI transport. 19 tests, typecheck and production build pass.
+- Builder verified fixed mobile labels, visible history opening, and controls within the narrow viewport. Independent retest could not access browser; no claim of a second blind pass.
+- PR #5 opened against verified default master; Codex reviewer automatically started for 995f712.
+
+## Fixes queued after continuous session
+- Native wait must finish under the host's 20-second evaluation deadline; use 15 seconds and verify timeout response live.
+- Reviewer findings accepted: tool readiness race, HTTP usability during SSE outage, own cards on uncontested results. Port discovery guidance already updated; make test preview port strict.
+- Clarify previous-street last action; sanitize legacy uncontested history reveals as well as folded cards.
+
+## Final verification before review refresh
+- Fresh-context ten-hand native session completed: 24 independent Codex actions, nine deals, no eleventh hand; human fold continuation, all-in, refill and Turn ownership checks passed. Full evidence in docs/evals/blind-session-10-hands.md.
+- Native idle-wait regression fixed and verified: 15,044 ms, ok=true, changed=false, returned without host timeout.
+- Live production-build SSE-outage check: temporary loopback proxy returned 503 only for /events. Human Call remained enabled; Codex native check succeeded; fallback HTTP refresh restored human Check in about 1.3 seconds. Proxy closed after verification.
+- Accepted review findings addressed: promise-based tool readiness, runtime URL discovery, strict test preview port, HTTP fallback, persistent own-card display and safe legacy history reveal filtering.
+- Remaining: final CI/browser regression results, refreshed review verdict, merge, and clean user-profile production preview.
