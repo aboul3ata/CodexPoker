@@ -165,3 +165,76 @@ test("a delayed HTTP poll cannot restore the previous hand after dealing", async
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Next hand" })).toHaveCount(0);
 });
+
+test("a delayed action receipt cannot overwrite a newer live table event", async ({
+  page,
+  request,
+}) => {
+  const live = (await (await request.get("/api/state")).json()).state;
+  const initial = {
+    ...live,
+    actingSeatId: "user",
+    phase: "playing",
+    turnToken: "initial",
+    legalActions: [{ kind: "check" }],
+    pot: 500,
+  };
+  const receipt = {
+    ...initial,
+    actingSeatId: "uplift",
+    actionSeq: initial.actionSeq + 1,
+    pot: 600,
+    legalActions: [],
+  };
+  const newer = {
+    ...initial,
+    actingSeatId: "user",
+    actionSeq: initial.actionSeq + 2,
+    turnToken: "newer",
+    pot: 800,
+  };
+  await page.addInitScript(() => {
+    class TestEventSource {
+      onopen: ((event: Event) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      constructor() {
+        setTimeout(() => this.onopen?.(new Event("open")), 0);
+      }
+      addEventListener(name: string, callback: (event: MessageEvent) => void) {
+        if (name === "state")
+          (window as any).__pokerPush = (state: unknown) =>
+            callback(
+              new MessageEvent("state", { data: JSON.stringify(state) }),
+            );
+      }
+      close() {}
+    }
+    window.EventSource = TestEventSource as unknown as typeof EventSource;
+  });
+  await page.route("**/api/state", (route) =>
+    route.fulfill({ json: { ok: true, state: initial } }),
+  );
+  let release: (() => void) | undefined;
+  await page.route("**/api/action", async (route) => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await route.fulfill({ json: { ok: true, state: receipt } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Check", exact: true }).click();
+  await expect.poll(() => Boolean(release)).toBe(true);
+  await page.evaluate(
+    (snapshot) => (window as any).__pokerPush(snapshot),
+    newer,
+  );
+  await expect(page.locator(".pot strong")).toHaveText("800");
+  const response = page.waitForResponse((r) => r.url().endsWith("/api/action"));
+  release!();
+  await response;
+  await page.waitForTimeout(250);
+  await expect(page.locator(".pot strong")).toHaveText("800");
+  await expect(
+    page.getByRole("button", { name: "Check", exact: true }),
+  ).toBeEnabled();
+});

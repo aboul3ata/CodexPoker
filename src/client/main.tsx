@@ -51,6 +51,7 @@ function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const stateRevision = useRef(0);
+  const pendingRequest = useRef(false);
   function acceptState(next: GameSnapshot) {
     stateRevision.current += 1;
     setState(next);
@@ -80,6 +81,7 @@ function App() {
     const events = new EventSource("/events");
     events.onopen = () => setConnected(true);
     events.addEventListener("state", (e) => {
+      if (!alive) return;
       acceptState(JSON.parse((e as MessageEvent).data));
       setConnected(true);
       setError("");
@@ -98,6 +100,7 @@ function App() {
     if (connected) return;
     let alive = true;
     const timer = window.setInterval(() => {
+      if (pendingRequest.current) return;
       const revision = stateRevision.current;
       request("/api/state")
         .then((next) => {
@@ -110,41 +113,41 @@ function App() {
       window.clearInterval(timer);
     };
   }, [connected]);
-  async function act(action: LegalAction, amount?: number) {
-    if (!state || pending) return;
-    stateRevision.current += 1;
+  async function refreshState() {
+    const revision = stateRevision.current;
+    const next = await request("/api/state");
+    if (revision === stateRevision.current) acceptState(next);
+  }
+  async function mutate(path: string, body: unknown) {
+    if (pendingRequest.current) return;
+    pendingRequest.current = true;
+    const revision = ++stateRevision.current;
     setPending(true);
     setError("");
     try {
-      acceptState(
-        await request("/api/action", {
-          seat: "user",
-          turnToken: state.turnToken,
-          action: action.kind,
-          ...(amount !== undefined ? { amount } : {}),
-        }),
-      );
-    } catch (e) {
-      setError((e as Error).message);
-      request("/api/state")
-        .then(acceptState)
-        .catch(() => {});
+      const next = await request(path, body);
+      if (revision === stateRevision.current) acceptState(next);
+    } catch (error) {
+      if (revision === stateRevision.current)
+        setError((error as Error).message);
+      await refreshState().catch(() => {});
     } finally {
+      pendingRequest.current = false;
       setPending(false);
     }
   }
-  async function next() {
-    if (!state || pending) return;
-    stateRevision.current += 1;
-    setPending(true);
-    setError("");
-    try {
-      acceptState(await request("/api/new-hand", { handId: state.handId }));
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setPending(false);
-    }
+  function act(action: LegalAction, amount?: number) {
+    if (!state) return;
+    return mutate("/api/action", {
+      seat: "user",
+      turnToken: state.turnToken,
+      action: action.kind,
+      ...(amount !== undefined ? { amount } : {}),
+    });
+  }
+  function next() {
+    if (!state) return;
+    return mutate("/api/new-hand", { handId: state.handId });
   }
   const done = state?.phase === "hand-complete";
   const me = state?.seats.find((s) => s.kind === "human");
@@ -186,8 +189,7 @@ function App() {
           {error}
           <button
             onClick={() =>
-              request("/api/state")
-                .then(acceptState)
+              refreshState()
                 .then(() => setError(""))
                 .catch((e) => setError(e.message))
             }
