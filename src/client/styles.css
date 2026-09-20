@@ -390,7 +390,7 @@ a {
   animation: deal 0.25s ease-out;
 }
 .playing-card.red {
-  color: #ba543b;
+  color: #a8402b;
 }
 .playing-card.empty {
   background: #244a3e70;
@@ -1197,4 +1197,12 @@ input[type="range"] {
   .seat-tag {
     font-size: 9px;
   }
+}
+
+/* Keep the secondary wager controls comfortable to tap. */
+.presets button {
+  min-height: 44px;
+}
+.cancel-wager {
+  min-width: 44px;
 }
