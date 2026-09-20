@@ -121,11 +121,15 @@ export function settleHand(
   }
   if (order.some((id) => !Number.isInteger(stacks[id]) || stacks[id] < 0))
     throw new Error("Invalid final stack.");
+  const winningHandNames = new Set([...winners].map((id) => ranked[id].name));
   return {
     stacks,
     payouts,
     winningSeatIds: [...winners],
     finalPot: contestedPot,
-    winningHandName: ranked[[...winners][0]]?.name ?? "Last player standing",
+    winningHandName:
+      winningHandNames.size > 1
+        ? "Multiple winning hands"
+        : (ranked[[...winners][0]]?.name ?? "Last player standing"),
   };
 }
