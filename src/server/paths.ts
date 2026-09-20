@@ -10,10 +10,6 @@ export function getDataDir() {
     : path.join(rootDir, 'data')
 }
 
-export function getBridgeDir() {
-  return path.join(getDataDir(), 'bridge')
-}
-
 export function getDbPath() {
   return process.env.CODEX_POKER_DB_PATH
     ? path.resolve(process.env.CODEX_POKER_DB_PATH)
@@ -21,7 +17,7 @@ export function getDbPath() {
 }
 
 export function ensureDataDirs() {
-  fs.mkdirSync(getBridgeDir(), { recursive: true })
+  fs.mkdirSync(getDataDir(), { recursive: true })
 }
 
 export function pathFromRoot(...parts: string[]) {

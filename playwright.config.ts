@@ -7,13 +7,13 @@ export default defineConfig({
   // The preview app has one local game session, so mutating e2e tests must not share it concurrently.
   workers: 1,
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: 'http://127.0.0.1:5193',
     trace: 'on-first-retry'
   },
   webServer: {
-    command: 'npm run dev',
-    url: 'http://127.0.0.1:5173',
-    reuseExistingServer: !process.env.CI,
+    command: 'CODEX_POKER_DATA_DIR=$(mktemp -d /tmp/codexpoker-e2e.XXXXXX) VITE_PORT=5193 npm run dev',
+    url: 'http://127.0.0.1:5193',
+    reuseExistingServer: false,
     timeout: 30000
   },
   projects: [
