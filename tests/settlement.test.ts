@@ -2,17 +2,15 @@ import { expect, it } from "vitest";
 import { rankHand, settleHand } from "../src/server/settlement";
 import type { Card, SeatId } from "../src/shared/contracts";
 const cards = (text: string) =>
-  text
-    .split(" ")
-    .map(
-      (c) =>
-        ({
-          rank: c[0],
-          suit: (
-            { c: "clubs", d: "diamonds", h: "hearts", s: "spades" } as const
-          )[c[1] as "c"],
-        }) as Card,
-    );
+  text.split(" ").map(
+    (c) =>
+      ({
+        rank: c[0],
+        suit: (
+          { c: "clubs", d: "diamonds", h: "hearts", s: "spades" } as const
+        )[c[1] as "c"],
+      }) as Card,
+  );
 it("ranks quads kickers, two trips, wheel and straight flush correctly", () => {
   expect(rankHand(cards("Ac Ad Ah As Kc 2d 3h")).score).toBeGreaterThan(
     rankHand(cards("Ac Ad Ah As Qc 2d 3h")).score,
@@ -55,4 +53,27 @@ it("awards odd chips clockwise and excludes folded hands from eligibility", () =
     cards("Ah Kh Qh Jh Th"),
   );
   expect(result.stacks).toEqual({ user: 102, uplift: 103, pip: 95 });
+});
+
+it("does not attribute the main-pot hand to a different side-pot winner", () => {
+  const order: SeatId[] = ["user", "uplift", "pip"];
+  const contributions = { user: 100, uplift: 300, pip: 500 } as Record<
+    SeatId,
+    number
+  >;
+  const result = settleHand(
+    order,
+    0,
+    contributions,
+    contributions,
+    new Set(),
+    {
+      user: cards("Ac Kc"),
+      uplift: cards("Qh Qd"),
+      pip: cards("Th Td"),
+    },
+    cards("2c 3c 7h 9s Jc"),
+  );
+  expect(result.stacks).toEqual({ user: 300, uplift: 400, pip: 200 });
+  expect(result.winningHandName).toBe("Multiple winning hands");
 });
